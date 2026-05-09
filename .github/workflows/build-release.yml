@@ -1,0 +1,83 @@
+name: Build and Release All Platforms
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: linux-appimage
+            build_command: npx electron-builder --linux --publish never
+            installer_glob: dist/*.AppImage
+
+          - os: windows-latest
+            artifact_name: windows-installer
+            build_command: npx electron-builder --win --publish never
+            installer_glob: dist/*.exe
+
+          - os: macos-latest
+            artifact_name: macos-installer
+            build_command: npx electron-builder --mac --publish never
+            installer_glob: dist/*.dmg
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build ${{ matrix.os }} package
+        run: ${{ matrix.build_command }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.installer_glob }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files
+          merge-multiple: true
+
+      - name: Get version
+        id: pkg_version
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$PKG_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.pkg_version.outputs.VERSION }}
+          name: Release v${{ steps.pkg_version.outputs.VERSION }}
+          body: "AI Hub Desktop – cross-platform release."
+          files: release-files/*
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
