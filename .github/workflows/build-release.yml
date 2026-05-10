@@ -13,19 +13,16 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
-            artifact_name: linux-appimage
+            artifact_name: linux-packages
             build_command: npx electron-builder --linux --publish never
-            installer_glob: dist/*.AppImage
 
           - os: windows-latest
             artifact_name: windows-installer
             build_command: npx electron-builder --win --publish never
-            installer_glob: dist/*.exe
 
           - os: macos-latest
             artifact_name: macos-installer
             build_command: npx electron-builder --mac --publish never
-            installer_glob: dist/*.dmg
 
     runs-on: ${{ matrix.os }}
 
@@ -48,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.installer_glob }}
+          path: dist/*
           if-no-files-found: error
 
   release:
@@ -59,7 +56,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download All Artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-files
