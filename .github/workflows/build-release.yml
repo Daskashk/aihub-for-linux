@@ -13,42 +13,36 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
-            artifact_name: linux-appimage
+            artifact_name: linux-packages
             build_command: npx electron-builder --linux --publish never
-            installer_glob: dist/*.AppImage
 
           - os: windows-latest
             artifact_name: windows-installer
             build_command: npx electron-builder --win --publish never
-            installer_glob: dist/*.exe
 
           - os: macos-latest
             artifact_name: macos-installer
             build_command: npx electron-builder --mac --publish never
-            installer_glob: dist/*.dmg
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - name: Install dependencies
-        run: npm install
+      - run: npm install
 
-      - name: Build ${{ matrix.os }} package
+      - name: Build ${{ matrix.os }}
         run: ${{ matrix.build_command }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.installer_glob }}
+          path: dist/*
           if-no-files-found: error
 
   release:
@@ -56,14 +50,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Download All Artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-files
           merge-multiple: true
+
+      - name: Remove unwanted files (cleanup)
+        run: |
+          echo "Before cleanup:"
+          ls -la release-files/
+          
+          rm -f release-files/*.yml release-files/*.yaml release-files/*.blockmap
+          
+          echo "After cleanup:"
+          ls -la release-files/
 
       - name: Get version
         id: pkg_version
@@ -71,7 +74,7 @@ jobs:
           PKG_VERSION=$(node -p "require('./package.json').version")
           echo "VERSION=$PKG_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create Release and Upload Assets
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.pkg_version.outputs.VERSION }}
@@ -81,3 +84,4 @@ jobs:
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
