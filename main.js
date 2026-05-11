@@ -23,20 +23,20 @@ const defaultConfig = {
   serviceOrder: [],
   lastActiveService: null,
   defaultService: 'chatgpt',
-  loadLastOpenedAI: true,
-  customJs: '',
-  customCss: '',
-  thirdPartyCookies: false,
-  updateFrequencyDays: 3,
-  fontSize: 'medium',
-  proxyEnabled: false,
-  proxyType: 'http',
-  proxyHost: '',
-  proxyPort: '',
-  remoteUrls: {
-    services: "https://raw.githubusercontent.com/SilentCoderHere/aihub-config-data/main/ai_services_list.json",
-    rules: "https://raw.githubusercontent.com/SilentCoderHere/aihub-config-data/main/domain_filtering_rules.json"
-  }
+    loadLastOpenedAI: true,
+    customJs: '',
+    customCss: '',
+    thirdPartyCookies: false,
+    updateFrequencyDays: 3,
+    fontSize: 'medium',
+    proxyEnabled: false,
+    proxyType: 'http',
+    proxyHost: '',
+    proxyPort: '',
+    remoteUrls: {
+      services: "https://raw.githubusercontent.com/SilentCoderHere/aihub-config-data/main/ai_services_list.json",
+      rules: "https://raw.githubusercontent.com/SilentCoderHere/aihub-config-data/main/domain_filtering_rules.json"
+    }
 };
 
 let config = { ...defaultConfig };
@@ -66,6 +66,12 @@ function loadConfig() {
         serviceOrder: savedConfig.serviceOrder || [],
         remoteUrls: { ...defaultConfig.remoteUrls, ...(savedConfig.remoteUrls || {}) }
       };
+      // Security: validate remote URLs use https
+      for (const key of Object.keys(config.remoteUrls)) {
+        if (!config.remoteUrls[key].startsWith('https://')) {
+          config.remoteUrls[key] = defaultConfig.remoteUrls[key] || '';
+        }
+      }
     }
     saveConfig();
   } catch (error) {
@@ -86,6 +92,10 @@ function saveConfig() {
 // --- REMOTE DATA FETCHING ---
 function fetchUrl(url) {
   return new Promise((resolve, reject) => {
+    // Security: only allow http/https schemes
+    if (!url.startsWith('https://') && !url.startsWith('http://')) {
+      return reject(new Error('Invalid URL scheme'));
+    }
     const protocol = url.startsWith('https') ? https : http;
 
     // Manual timeout wrapper (compatible with all Electron builds)
@@ -204,17 +214,17 @@ function calculateUpdateDiff(oldServices, newServices, oldRules, newRules) {
   }
 
   diff.hasChanges =
-    diff.servicesAdded.length > 0 ||
-    diff.servicesRemoved.length > 0 ||
-    diff.servicesChanged.length > 0 ||
-    diff.domainsAdded.length > 0 ||
-    diff.domainsRemoved.length > 0 ||
-    diff.alwaysBlockedAdded.length > 0 ||
-    diff.alwaysBlockedRemoved.length > 0 ||
-    diff.commonAuthAdded.length > 0 ||
-    diff.commonAuthRemoved.length > 0 ||
-    diff.trackingParamsAdded.length > 0 ||
-    diff.trackingParamsRemoved.length > 0;
+  diff.servicesAdded.length > 0 ||
+  diff.servicesRemoved.length > 0 ||
+  diff.servicesChanged.length > 0 ||
+  diff.domainsAdded.length > 0 ||
+  diff.domainsRemoved.length > 0 ||
+  diff.alwaysBlockedAdded.length > 0 ||
+  diff.alwaysBlockedRemoved.length > 0 ||
+  diff.commonAuthAdded.length > 0 ||
+  diff.commonAuthRemoved.length > 0 ||
+  diff.trackingParamsAdded.length > 0 ||
+  diff.trackingParamsRemoved.length > 0;
 
   return diff;
 }
@@ -357,13 +367,9 @@ function setupSessionBlocking(serviceId) {
   const ses = session.fromPartition(partitionName);
   initializedSessions.add(partitionName);
 
-  // Flush cookie storage data to disk (safe check for different Electron builds)
-  try {
-    if (ses.cookies && typeof ses.cookies.flushStorageData === 'function') {
-      ses.cookies.flushStorageData().catch(() => {});
-    }
-  } catch (e) {
-    // Some Electron builds don't support this method
+  // Apply third-party cookies setting
+  if (!config.thirdPartyCookies) {
+    ses.cookies.flushStorageData().catch(() => {});
   }
 
   // Apply proxy if enabled
@@ -380,9 +386,9 @@ function setupSessionBlocking(serviceId) {
         details.url.startsWith('file://') ||
         details.url.startsWith('chrome-extension://')) {
         return callback({});
-      }
+        }
 
-      const rules = loadRules();
+        const rules = loadRules();
       let serviceDomains = [];
       if (rules && rules.service_domains && rules.service_domains[serviceId]) {
         serviceDomains = rules.service_domains[serviceId];
@@ -502,8 +508,10 @@ function createMainWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: false,
+      sandbox: true,
       webviewTag: true,
+      allowRunningInsecureContent: false,
+      disableHtmlFullscreenWindowResize: true,
       preload: path.join(__dirname, 'preload.js')
     }
   });
@@ -532,11 +540,7 @@ function createMainWindow() {
 
 // --- IPC HANDLERS ---
 
-ipcMain.handle('get-config', () => {
-  // Return a safe copy without exposing sensitive internal fields
-  const safeConfig = { ...config };
-  return safeConfig;
-});
+ipcMain.handle('get-config', () => config);
 ipcMain.handle('get-services', () => loadServices());
 ipcMain.handle('get-rules', () => loadRules());
 ipcMain.handle('update-remote-data', async () => await updateRemoteData());
@@ -545,14 +549,31 @@ ipcMain.handle('save-config', (event, newConfig) => {
   const allowedKeys = [
     'blockingEnabled', 'maxActiveServices', 'darkMode',
     'defaultService', 'loadLastOpenedAI', 'thirdPartyCookies',
-    'updateFrequencyDays', 'fontSize', 'proxyEnabled',
-    'proxyType', 'proxyHost', 'proxyPort', 'customJs', 'customCss'
+    'updateFrequencyDays', 'fontSize'
   ];
   if (newConfig && newConfig.enabledServices) {
     config.enabledServices = [...new Set(newConfig.enabledServices)];
   }
   for (const key of allowedKeys) {
-    if (key in newConfig) config[key] = newConfig[key];
+    if (key in newConfig) {
+      // Security: type validation for config values
+      if (key === 'blockingEnabled' || key === 'darkMode' || key === 'loadLastOpenedAI' || key === 'thirdPartyCookies') {
+        config[key] = !!newConfig[key];
+      } else if (key === 'maxActiveServices') {
+        const val = parseInt(newConfig[key], 10);
+        config[key] = (val >= 1 && val <= 10) ? val : 3;
+      } else if (key === 'updateFrequencyDays') {
+        const val = parseInt(newConfig[key], 10);
+        config[key] = (val === -1 || (val >= 1 && val <= 30)) ? val : 3;
+      } else if (key === 'fontSize') {
+        const validSizes = ['x-small', 'small', 'medium', 'large', 'x-large'];
+        config[key] = validSizes.includes(newConfig[key]) ? newConfig[key] : 'medium';
+      } else if (key === 'defaultService') {
+        config[key] = typeof newConfig[key] === 'string' && /^[a-z0-9-]+$/.test(newConfig[key]) ? newConfig[key] : 'chatgpt';
+      } else {
+        config[key] = newConfig[key];
+      }
+    }
   }
   saveConfig();
   return config;
@@ -578,6 +599,8 @@ ipcMain.handle('toggle-service', (event, serviceId) => {
 });
 
 ipcMain.on('set-active-service', (event, serviceId) => {
+  // Security: validate serviceId to prevent injection
+  if (typeof serviceId !== 'string' || !/^[a-z0-9-]+$/.test(serviceId)) return;
   config.lastActiveService = serviceId;
   setupSessionBlocking(serviceId);
   saveConfig();
@@ -606,24 +629,12 @@ ipcMain.handle('set-service-order', (event, order) => {
 
 // New: Save custom JS/CSS injection
 ipcMain.handle('save-custom-injection', (event, js, css) => {
-  // Validate and sanitize custom injection code
-  const MAX_INJECTION_SIZE = 100000; // 100KB limit
-  if (typeof js === 'string') {
-    if (js.length > MAX_INJECTION_SIZE) js = js.substring(0, MAX_INJECTION_SIZE);
-    // Block obvious dangerous patterns in JS
-    if (/{\s*require\s*\(/.test(js) || /process\./.test(js) || /__dirname/.test(js) || /__filename/.test(js)) {
-      return { success: false, error: 'Custom JS contains forbidden patterns (require, process, __dirname, __filename)' };
-    }
-    config.customJs = js;
-  } else {
-    config.customJs = '';
-  }
-  if (typeof css === 'string') {
-    if (css.length > MAX_INJECTION_SIZE) css = css.substring(0, MAX_INJECTION_SIZE);
-    config.customCss = css;
-  } else {
-    config.customCss = '';
-  }
+  // Security: limit injection size to prevent memory issues (50KB each max)
+  const MAX_INJECTION_SIZE = 51200;
+  if (typeof js === 'string' && js.length > MAX_INJECTION_SIZE) js = js.substring(0, MAX_INJECTION_SIZE);
+  if (typeof css === 'string' && css.length > MAX_INJECTION_SIZE) css = css.substring(0, MAX_INJECTION_SIZE);
+  config.customJs = typeof js === 'string' ? js : '';
+  config.customCss = typeof css === 'string' ? css : '';
   saveConfig();
   return { success: true, customJs: config.customJs, customCss: config.customCss };
 });
@@ -638,8 +649,14 @@ ipcMain.handle('set-proxy', (event, proxyConfig) => {
   if (!proxyConfig || typeof proxyConfig !== 'object') return { success: false };
   config.proxyEnabled = !!proxyConfig.proxyEnabled;
   config.proxyType = (proxyConfig.proxyType === 'socks5' || proxyConfig.proxyType === 'http') ? proxyConfig.proxyType : 'http';
-  config.proxyHost = typeof proxyConfig.proxyHost === 'string' ? proxyConfig.proxyHost.replace(/[^a-zA-Z0-9.\-_]/g, '') : '';
-  config.proxyPort = typeof proxyConfig.proxyPort === 'string' ? proxyConfig.proxyPort.replace(/[^0-9]/g, '') : '';
+  // Security: strict validation on proxy host/port to prevent injection
+  config.proxyHost = typeof proxyConfig.proxyHost === 'string' ? proxyConfig.proxyHost.replace(/[^a-zA-Z0-9.\-_:/]/g, '').substring(0, 253) : '';
+  config.proxyPort = typeof proxyConfig.proxyPort === 'string' ? proxyConfig.proxyPort.replace(/[^0-9]/g, '').substring(0, 5) : '';
+  // Validate port range
+  if (config.proxyPort) {
+    const portNum = parseInt(config.proxyPort, 10);
+    if (portNum < 1 || portNum > 65535) config.proxyPort = '';
+  }
   saveConfig();
   applyProxyToAllSessions();
   return { success: true };
@@ -770,7 +787,8 @@ ipcMain.handle('open-login-window', async (event, url, serviceId) => {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        sandbox: false,
+        sandbox: true,
+        allowRunningInsecureContent: false,
         partition: `persist:${serviceId}`
       }
     });
@@ -804,9 +822,9 @@ ipcMain.handle('open-login-window', async (event, url, serviceId) => {
 ipcMain.handle('get-app-version', () => {
   try {
     const pkg = require('./package.json');
-    return pkg.version || '0.6.0-beta';
+    return pkg.version || '0.6.1-beta';
   } catch (e) {
-    return '0.6.0-beta';
+    return '0.6.1-beta';
   }
 });
 

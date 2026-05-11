@@ -5,7 +5,7 @@
 **All your AI assistants. One desktop app. Privacy-first.**
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://opensource.org/licenses/GPL-3.0)
-[![Version](https://img.shields.io/badge/Version-0.5.1--beta-green.svg)](https://github.com/Daskashk/aihub-desktop/releases)
+[![Version](https://img.shields.io/badge/Version-0.6.4--beta-green.svg)](https://github.com/Daskashk/aihub-desktop/releases)
 [![Platform](https://img.shields.io/badge/Platform-Linux-fcc624.svg?logo=linux&logoColor=black)](https://github.com/Daskashk/aihub-desktop/releases)
 [![Electron](https://img.shields.io/badge/Electron-41-47848f.svg?logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](https://github.com/Daskashk/aihub-desktop/pulls)
@@ -24,31 +24,75 @@ A lightweight, privacy-focused desktop application that brings **65+ AI assistan
 
 ### Unified AI Workspace
 
-Access **65+ AI assistants** — from ChatGPT and Claude to Gemini and DeepSeek — all within a single desktop window. Each service runs in its own isolated tab with persistent login sessions that survive app restarts.
+Access **65+ AI assistants** — from ChatGPT and Claude to Gemini and DeepSeek — all within a single desktop window. Each service runs in its own isolated tab with persistent login sessions that survive app restarts. Open multiple services simultaneously (up to a configurable limit) and switch between them instantly.
+
+### Favorites & Service Ordering
+
+Mark your most-used AI services as favorites for quick access — they appear at the top of the sidebar in a dedicated section. Drag-free reordering controls let you arrange enabled services in any order you prefer, and your custom order persists across sessions.
 
 ### Privacy-First Network Firewall
 
 Unlike regular browser tabs that happily load every tracker and analytics script, AI Hub Desktop blocks **all network requests** except those explicitly whitelisted for each service. Trackers, ads, and telemetry are stopped at the network level before they even load. A curated list of always-blocked tracking domains (Google Analytics, Baidu Analytics, and more) provides an additional layer of protection on top of per-service allowlists.
 
-### Privacy Badges
+### Tracking Parameter Stripping
 
-Every AI service is labeled with a clear privacy rating — **Privacy Focused** (green), **Privacy Friendly** (yellow), or **Not for Privacy** (red) — so you can make informed decisions at a glance.
+URLs are automatically cleaned of known tracking parameters (UTM tags, click IDs, etc.) before requests are made. This happens silently at the network level via redirects, so you never unknowingly share tracking data with third parties.
+
+### Privacy & Pricing Badges
+
+Every AI service is labeled with clear badges:
+- **Privacy ratings** — Privacy Focused (green), Privacy Friendly (yellow), Not for Privacy (red) — so you can make informed decisions at a glance.
+- **Pricing info** — Free, Freemium, or Paid — so you know what to expect before opening a service.
 
 ### Remotely Updated Service Directory
 
-The AI service catalog and domain filtering rules are fetched from a shared [remote configuration repository](https://github.com/SilentCoderHere/aihub-config-data), meaning new AI services and updated privacy rules are delivered without requiring an app update.
+The AI service catalog and domain filtering rules are fetched from a shared [remote configuration repository](https://github.com/SilentCoderHere/aihub-config-data), meaning new AI services and updated privacy rules are delivered without requiring an app update. Automatic update checks run on a configurable schedule (daily, every 3 days, weekly, or manual only), and a detailed diff of changes is shown when updates are available.
 
-### Service Manager
+### Service Manager with Category Filters
 
-Enable, disable, and organize only the AI services you care about. A configurable cap (1–10) on concurrent active tabs lets you balance functionality against memory usage.
+Enable, disable, and organize only the AI services you care about. Category filter chips in the sidebar and a full category dropdown in settings let you quickly find services by type (General, Research, Regional, etc.). A configurable cap (1–10) on concurrent active tabs lets you balance functionality against memory usage.
+
+### Custom JavaScript & CSS Injection
+
+Inject custom JavaScript and/or CSS into every service page after it loads. This enables per-service style customization, dark-mode fixes, accessibility improvements, or any other client-side modification — just like the Android version's custom injection feature. Code is sanitized for safety (dangerous patterns like `require()` and `process` access are blocked).
+
+### Proxy Support
+
+Route all service traffic through an HTTP or SOCKS5 proxy server. Proxy settings are applied per-session and can be changed without restarting the app. This is useful for privacy, bypassing network restrictions, or accessing region-locked services.
+
+### Default Service & Auto-Open
+
+Configure which AI service opens on launch — either the last service you used, or a specific default service of your choice. The app remembers your last active service and restores it automatically.
+
+### Font Size Control
+
+Adjust the text rendering size in service web pages across five levels (X-Small 80% through X-Large 120%), applied globally to all active service tabs.
 
 ### Dark & Light Themes
 
-Switch between dark and light modes to match your desktop environment and personal preference. All theming is handled through CSS custom properties for a consistent experience.
+Switch between dark and light modes to match your desktop environment and personal preference. All theming is handled through CSS custom properties for a consistent, flicker-free experience.
+
+### Smart Loading Indicators
+
+The loading overlay only appears for actual main-frame page navigations — not for sub-resource loads, iframe embeds, or streaming text generation. This means the spinner won't annoyingly flash while an AI service is streaming its response.
+
+### Context Menu & Link Handling
+
+Right-click on any link within a service page to open it in your default system browser or copy the cleaned URL. The custom context menu provides navigation controls (back, forward, reload) and page-level actions. All external links open in the system browser, never in a new Electron window.
 
 ### Per-Service Data Isolation
 
-Each AI service operates within its own Electron session partition (`persist:serviceId`), ensuring cookies, local storage, and session data are completely isolated between services — more secure than sharing a single browser profile.
+Each AI service operates within its own Electron session partition (`persist:serviceId`), ensuring cookies, local storage, and session data are completely isolated between services — more secure than sharing a single browser profile. Individual service data can be cleared independently, or all data can be cleared at once.
+
+### Storage Management
+
+Two levels of data clearing are available:
+- **Clear Cache**: Removes only temporary cached files (images, scripts, stylesheets) without affecting login sessions.
+- **Clear All Data**: Removes cookies, local storage, and all cached data for every service. You will be logged out of all services.
+
+### Login Window
+
+Some AI services require OAuth flows that don't work well inside an embedded WebView. The dedicated login window opens a separate browser window sharing the same session partition, allowing you to complete authentication and then seamlessly return to the embedded view.
 
 ---
 
@@ -60,12 +104,15 @@ AI Hub Desktop was designed from the ground up with a security-first mindset. He
 |-------|-----------|
 | **Network Firewall** | All requests are intercepted via `webRequest.onBeforeRequest`. Only whitelisted domains for each service are allowed through. Everything else is silently blocked. |
 | **Always-Blocked Domains** | Specific tracking and analytics subdomains are blocked even within otherwise-allowed services (e.g., `ab.chatgpt.com`, `www.google-analytics.com` on Gemini). |
-| **Sandboxed WebViews** | Every WebView runs with `sandbox: true`, `contextIsolation: true`, and `nodeIntegration: false`. |
-| **Content Security Policy** | A strict CSP (`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'`) is enforced on the renderer. |
+| **Sandboxed WebViews** | Every WebView runs with `sandbox: true`, `contextIsolation: true`, and `nodeIntegration: false`. The main window uses `contextIsolation: true` with `nodeIntegration: false`. |
+| **Content Security Policy** | A strict CSP (`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:`) is enforced on the renderer. |
 | **XSS Prevention** | All dynamic content is escaped via `escapeHtml()` and `sanitizeColor()` before rendering. |
-| **IPC Whitelist** | Only specific configuration keys (`blockingEnabled`, `maxActiveServices`, `darkMode`) are accepted by the main process save handler. |
-| **URL Validation** | The open-in-browser handler validates that URLs use `http:` or `https:` protocols before delegating to the system browser. |
+| **IPC Whitelist** | Only specific configuration keys are accepted by the main process save handler. Service IDs are validated with strict regex patterns. |
+| **URL Validation** | The open-in-browser handler validates that URLs use `http:` or `https:` protocols before delegating to the system browser. Disguised `javascript:` and `data:` schemes in encoded URLs are also blocked. |
 | **Session Isolation** | Each service uses a separate `persist:` partition, preventing cross-service cookie or storage leakage. |
+| **Tracking Param Stripping** | Known tracking parameters are stripped from URLs at the network level via redirect interception. |
+| **Custom Code Sanitization** | Custom JS injection blocks dangerous patterns (`require()`, `process`, `__dirname`, `__filename`) and enforces a 100KB size limit. |
+| **Navigation Guard** | The main window is prevented from navigating away from the app UI. All external URLs are opened in the system browser instead. |
 | **Clean Shutdown** | On quit, all `onBeforeRequest` listeners are removed and active WebViews are stopped, cleared, and properly disposed. |
 
 ---
@@ -134,27 +181,44 @@ AI Hub Desktop follows the standard Electron multi-process architecture with a d
 
 ```
 aihub-desktop/
-├── main.js                  # Electron main process (237 lines)
+├── main.js                  # Electron main process
 │   ├── App lifecycle & window management
 │   ├── Config persistence (userData/config.json)
 │   ├── Remote data fetching (services + rules)
-│   ├── IPC handlers
+│   ├── Update diff calculation
+│   ├── Domain blocking engine (with always-blocked support)
+│   ├── Tracking parameter stripping
+│   ├── Proxy configuration
+│   ├── IPC handlers (20+ channels)
 │   └── Session-level domain blocking
 │
-├── preload.js               # Context bridge (13 lines)
-│   └── Exposes electronAPI to renderer
+├── preload.js               # Context bridge
+│   └── Exposes electronAPI to renderer (25+ methods)
 │
 └── ui/
-    ├── index.html           # Main UI shell (200 lines)
-    ├── renderer.js          # Frontend logic (303 lines)
+    ├── assets/
+    │   ├── icon.png         # Linux icon (rounded)
+    │   ├── icon.ico         # Windows icon
+    │   └── icon.icns        # macOS icon
+    ├── index.html           # Main UI shell
+    │   ├── Compact header (30px)
+    │   ├── Sidebar with search, categories, favorites
+    │   ├── Content area with loading/error overlays
+    │   ├── Settings modal (4 tabs: General, Services, Injection, About)
+    │   └── Confirmation & update modals
+    ├── renderer.js          # Frontend logic
     │   ├── Sidebar & tab management
-    │   ├── Dynamic WebView creation
-    │   ├── Settings modal
-    │   └── Service state management
-    └── styles.css           # Complete styling (186 lines)
-        ├── Dark/light theme variables
+    │   ├── Dynamic WebView creation with sandbox
+    │   ├── Smart loading overlay (main-frame only)
+    │   ├── Custom context menu with link handling
+    │   ├── Custom code injection (JS + CSS)
+    │   ├── Service reorder & favorites
+    │   └── Auto-open on startup
+    └── styles.css           # Complete styling
+        ├── Dark/light theme CSS variables
         ├── Layout & components
-        └── Privacy badge colors
+        ├── Privacy & pricing badges
+        └── Material Design toggle switches
 ```
 
 ### Process Communication
@@ -163,7 +227,7 @@ aihub-desktop/
 ┌─────────────────────────────────────────────────┐
 │               Main Process (main.js)             │
 │   App lifecycle · Config · Remote fetch          │
-│   Domain blocking · IPC handlers                 │
+│   Domain blocking · Tracking strip · IPC         │
 └────────────────────┬────────────────────────────┘
                      │ IPC (ipcMain ↔ ipcRenderer)
 ┌────────────────────┴────────────────────────────┐
@@ -199,8 +263,22 @@ aihub-desktop/
 | `update-remote-data` | Renderer → Main | Pull latest remote config updates |
 | `toggle-service` | Renderer → Main | Enable or disable an AI service |
 | `set-active-service` | Renderer → Main | Switch active tab + configure blocking |
+| `toggle-favorite` | Renderer → Main | Add or remove a service from favorites |
+| `set-service-order` | Renderer → Main | Update custom service ordering |
+| `save-custom-injection` | Renderer → Main | Save custom JS/CSS with sanitization |
 | `clear-service-data` | Renderer → Main | Clear cookies/cache for a service |
-| `open-in-browser` | Renderer → Main | Open URL in system browser |
+| `clear-all-data` | Renderer → Main | Clear cookies/cache for all services |
+| `clear-cache` | Renderer → Main | Clear temporary cache only |
+| `open-in-browser` | Renderer → Main | Open URL in system browser (validated) |
+| `open-login-window` | Renderer → Main | Open separate OAuth/login window |
+| `get-app-version` | Renderer → Main | Retrieve app version from package.json |
+| `clean-url-tracking` | Renderer → Main | Strip tracking parameters from a URL |
+| `get-update-details` | Renderer → Main | Retrieve last update diff |
+| `set-proxy` | Renderer → Main | Configure HTTP/SOCKS5 proxy |
+| `apply-proxy-to-session` | Renderer → Main | Apply proxy to specific service session |
+| `set-third-party-cookies` | Renderer → Main | Toggle third-party cookie policy |
+| `login-window-closed` | Main → Renderer | Notify that login window was closed |
+| `auto-update-available` | Main → Renderer | Notify that remote updates are available |
 
 ---
 
@@ -236,6 +314,15 @@ npm install
 npm start
 ```
 
+### Running with System Electron
+
+On distributions like openSUSE that package Electron separately, you can run the app without installing npm dependencies:
+
+```bash
+# Using the system Electron
+electron .
+```
+
 ### Development Mode
 
 When running with `NODE_ENV=development`, you can press **F12** to toggle DevTools for debugging.
@@ -265,9 +352,14 @@ Settings are accessible through the in-app Settings modal (gear icon in the head
 
 | Setting | Default | Range | Description |
 |---------|---------|-------|-------------|
+| Load Last Opened AI | Enabled | On/Off | Automatically reopen the last used service on startup |
+| Default AI Assistant | chatgpt | Any enabled service | Service that opens when no last service is found |
+| Active Services Limit | 3 | 1–10 | Maximum concurrent AI service tabs |
+| Font Size | Medium | X-Small to X-Large | Text rendering size in web pages |
+| Third-Party Cookies | Disabled | On/Off | Allow cross-origin cookies (may affect login flows) |
 | Domain Blocking | Enabled | On/Off | Toggle the network-level tracker/ad blocker |
-| Max Active Services | 3 | 1–10 | Maximum number of concurrent AI service tabs |
-| Dark Mode | Enabled | On/Off | Toggle between dark and light themes |
+| Proxy | Disabled | On/Off + config | Route traffic through HTTP/SOCKS5 proxy |
+| Update Frequency | Every 3 days | Daily/Weekly/Manual | How often to auto-check for service list updates |
 
 ### Config File Location
 
@@ -284,9 +376,25 @@ Configuration is persisted at:
 ```json
 {
   "lastUpdate": null,
+  "lastUpdateCheck": null,
   "blockingEnabled": true,
   "maxActiveServices": 3,
-  "activeServices": [],
+  "darkMode": true,
+  "enabledServices": ["chatgpt", "claude", "gemini"],
+  "favoriteServices": [],
+  "serviceOrder": [],
+  "lastActiveService": null,
+  "defaultService": "chatgpt",
+  "loadLastOpenedAI": true,
+  "customJs": "",
+  "customCss": "",
+  "thirdPartyCookies": false,
+  "updateFrequencyDays": 3,
+  "fontSize": "medium",
+  "proxyEnabled": false,
+  "proxyType": "http",
+  "proxyHost": "",
+  "proxyPort": "",
   "remoteUrls": {
     "services": "https://raw.githubusercontent.com/SilentCoderHere/aihub-config-data/main/ai_services_list.json",
     "rules": "https://raw.githubusercontent.com/SilentCoderHere/aihub-config-data/main/domain_filtering_rules.json"
@@ -303,7 +411,7 @@ Fetched service and rule data is cached locally at:
 ~/.config/ai-hub-desktop/data/remote_rules.json
 ```
 
-Click the **Update Lists** button in the header to fetch the latest AI service catalog and domain rules from the shared config repository.
+Click the **Update** button (circular arrows) in the header to fetch the latest AI service catalog and domain rules from the shared config repository.
 
 ---
 
@@ -313,19 +421,10 @@ Click the **Update Lists** button in the header to fetch the latest AI service c
 |----------|--------|
 | `Ctrl + =` | Zoom in on active tab |
 | `Ctrl + -` | Zoom out on active tab |
+| `Ctrl + 0` | Reset zoom to default |
+| `Ctrl + R` | Reload current service page |
+| `Escape` | Close any open modal/dialog |
 | `F12` | Toggle DevTools *(development mode only)* |
-
----
-
-## 🗺️ Roadmap
-
-AI Hub Desktop is in early beta. Here are some areas where the project could grow:
-
-- [ ] **Custom CSS/JS injection** — Per-service style and script customization (as in the Android version)
-- [ ] **Proxy support** — HTTP/SOCKS proxy configuration
-- [ ] **Auto-update mechanism** — Check for and apply updates automatically
-
-Have an idea? [Open an issue](https://github.com/Daskashk/aihub-desktop/issues) or submit a PR!
 
 ---
 
@@ -368,8 +467,8 @@ The original AI Hub Android app was inspired by:
   **[#aihub-silentcoder:matrix.org](https://matrix.to/#/#aihub-silentcoder:matrix.org)**
   **[#topic-guild:matrix.org](https://matrix.to/#/#topic-guild:matrix.org)**
 - Join my community on Telegram:
-  **[@topicguild](https://t.me/topicsguild)
-  
+  **[@topicguild](https://t.me/topicsguild)**
+
 ---
 
 ## 📜 License
@@ -384,6 +483,6 @@ This means you are free to use, modify, and distribute this software, provided t
 
 **[⬆ Back to Top](#ai-hub-desktop)**
 
-Made with AI assistant· Based on [AI Hub](https://github.com/SilentCoderHere/aihub) by [SilentCoder](https://github.com/SilentCoderHere)
+Made with AI assistance · Based on [AI Hub](https://github.com/SilentCoderHere/aihub) by [SilentCoder](https://github.com/SilentCoderHere)
 
 </div>

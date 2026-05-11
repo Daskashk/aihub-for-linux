@@ -1,21 +1,15 @@
 {
   "name": "aihub-desktop",
-  "version": "0.6.3-beta",
+  "version": "0.6.1-beta",
   "description": "All-in-one AI assistants desktop app",
   "main": "main.js",
-  "author": "Daskashk <130722296+Daskashk@users.noreply.github.com>",
+  "author": "Daskashk",
   "license": "GPL-3.0",
-
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
     "build:linux": "electron-builder --linux",
-    "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
-    "build:all": "electron-builder -mwl",
-    "build:ci": "electron-builder --publish never"
+    "build:ci": "electron-builder --linux --publish never"
   },
-
   "build": {
     "appId": "com.aihub.desktop",
     "productName": "AI Hub Desktop",
@@ -23,34 +17,23 @@
       "output": "dist"
     },
     "files": [
-      "**/*",
-      "!dist/**/*",
-      "!**/.git/**",
-      "!**/*.log",
-      "!**/node_modules/.cache/**",
-      "!**/*.map"
+      "main.js",
+      "preload.js",
+      "config.json",
+      "ui/**/*",
+      "package.json"
     ],
-
     "linux": {
-      "target": ["AppImage", "deb", "rpm"],
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
       "category": "Utility",
       "icon": "ui/assets/icon.png"
-    },
-
-    "win": {
-      "target": "nsis",
-      "icon": "ui/assets/icon.ico"
-    },
-
-    "mac": {
-      "target": "dmg",
-      "icon": "ui/assets/icon.icns",
-      "category": "public.app-category.productivity"
-    },
-
-    "publish": null
+    }
   },
-
   "devDependencies": {
     "electron": "^41.3.0",
     "electron-builder": "^24.9.1"

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none';">
   <title>Service</title>
   <style>
     body, html {
@@ -19,22 +20,18 @@
   </style>
 </head>
 <body>
-  <webview id="serviceWebview" src="about:blank" allowpopups></webview>
+  <webview id="serviceWebview" src="about:blank" sandbox></webview>
 
   <script>
-    const { ipcRenderer } = require('electron');
-
     // Get URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const serviceUrl = urlParams.get('url');
-    const serviceName = urlParams.get('name');
-    const serviceId = urlParams.get('id');
 
     // Load the service
     const webview = document.getElementById('serviceWebview');
 
     if (serviceUrl) {
-      webview.src = serviceUrl;
+      webview.setAttribute('src', serviceUrl);
     }
 
     // Handle webview events
@@ -50,10 +47,12 @@
       console.error('Error loading service:', event.errorDescription);
     });
 
-    // Handle new windows (popups)
+    // Handle new windows (popups) - open in default browser via IPC
     webview.addEventListener('new-window', (event) => {
-      // Open external links in default browser
-      require('electron').shell.openExternal(event.url);
+      event.preventDefault();
+      if (event.url && (event.url.startsWith('http://') || event.url.startsWith('https://')) && window.electronAPI) {
+        window.electronAPI.openInBrowser(event.url).catch(() => {});
+      }
     });
   </script>
 </body>
