@@ -1,69 +1,68 @@
 document.addEventListener('DOMContentLoaded', () => {
     const elements = {
         sidebar: document.getElementById('sidebar'),
-        toggleSidebarBtn: document.getElementById('btn-toggle-sidebar'),
-        servicesList: document.getElementById('services-list'),
-        allServicesList: document.getElementById('all-services-list'),
-        webviewsContainer: document.getElementById('webviews-container'),
-        welcomeScreen: document.getElementById('welcome-screen'),
-        settingsPanel: document.getElementById('settings-panel'),
-        btnSettings: document.getElementById('btn-settings'),
-        btnUpdate: document.getElementById('btn-update'),
-        toggleBlocking: document.getElementById('toggle-blocking'),
-        maxServicesInput: document.getElementById('max-services'),
-        toggleDarkMode: document.getElementById('toggle-dark-mode'),
-        lastUpdate: document.getElementById('last-update'),
-        btnSaveSettings: document.getElementById('btn-save-settings'),
-        btnCloseSettings: document.getElementById('btn-close-settings'),
-        modalTabs: document.querySelectorAll('.modal-tab'),
-        tabContents: document.querySelectorAll('.tab-content'),
-        btnZoomIn: document.getElementById('btn-zoom-in'),
-        btnZoomOut: document.getElementById('btn-zoom-out'),
-        btnZoomReset: document.getElementById('btn-zoom-reset'),
-        btnOpenBrowser: document.getElementById('btn-open-browser'),
-        blockingIndicator: document.getElementById('blocking-indicator'),
-        blockingText: document.getElementById('blocking-text'),
-        btnClearData: document.getElementById('btn-clear-data'),
-        clearDataModal: document.getElementById('clear-data-modal'),
-        btnCancelClear: document.getElementById('btn-cancel-clear'),
-        btnConfirmClear: document.getElementById('btn-confirm-clear'),
-        btnReloadPage: document.getElementById('btn-reload-page'),
-        serviceSearch: document.getElementById('service-search'),
-        categoryFilter: document.getElementById('category-filter'),
-        // New elements
-        activeServicesBadge: document.getElementById('active-services-badge'),
-        sidebarSearchInput: document.getElementById('sidebar-search-input'),
-        sidebarCategories: document.getElementById('sidebar-categories'),
-        loadingOverlay: document.getElementById('loading-overlay'),
-        loadingProgressBar: document.getElementById('loading-progress-bar'),
-        errorOverlay: document.getElementById('error-overlay'),
-        errorMessage: document.getElementById('error-message'),
-        btnRetry: document.getElementById('btn-retry'),
-        toggleLoadLast: document.getElementById('toggle-load-last'),
-        defaultServiceSelect: document.getElementById('default-service-select'),
-        fontSizeSelect: document.getElementById('font-size-select'),
-        toggleThirdPartyCookies: document.getElementById('toggle-third-party-cookies'),
-        toggleProxy: document.getElementById('toggle-proxy'),
-        proxyConfigSection: document.getElementById('proxy-config-section'),
-        proxyTypeSelect: document.getElementById('proxy-type-select'),
-        proxyHostInput: document.getElementById('proxy-host-input'),
-        proxyPortInput: document.getElementById('proxy-port-input'),
-        updateFrequencySelect: document.getElementById('update-frequency-select'),
-        customJsEditor: document.getElementById('custom-js-editor'),
-        customCssEditor: document.getElementById('custom-css-editor'),
-        btnSaveInjection: document.getElementById('btn-save-injection'),
-        jsUnsaved: document.getElementById('js-unsaved'),
-        cssUnsaved: document.getElementById('css-unsaved'),
-        btnClearCache: document.getElementById('btn-clear-cache'),
-        btnClearAllData: document.getElementById('btn-clear-all-data'),
-        clearAllDataModal: document.getElementById('clear-all-data-modal'),
-        btnCancelClearAll: document.getElementById('btn-cancel-clear-all'),
-        btnConfirmClearAll: document.getElementById('btn-confirm-clear-all'),
-        updateDetailsModal: document.getElementById('update-details-modal'),
-        updateDetailsBody: document.getElementById('update-details-body'),
-        btnCloseUpdateDetails: document.getElementById('btn-close-update-details'),
-        btnDismissUpdate: document.getElementById('btn-dismiss-update'),
-        btnApplyUpdate: document.getElementById('btn-apply-update')
+                          toggleSidebarBtn: document.getElementById('btn-toggle-sidebar'),
+                          servicesList: document.getElementById('services-list'),
+                          allServicesList: document.getElementById('all-services-list'),
+                          webviewsContainer: document.getElementById('webviews-container'),
+                          welcomeScreen: document.getElementById('welcome-screen'),
+                          settingsPanel: document.getElementById('settings-panel'),
+                          btnSettings: document.getElementById('btn-settings'),
+                          btnUpdate: document.getElementById('btn-update'),
+                          toggleBlocking: document.getElementById('toggle-blocking'),
+                          maxServicesInput: document.getElementById('max-services'),
+                          toggleDarkMode: document.getElementById('toggle-dark-mode'),
+                          lastUpdate: document.getElementById('last-update'),
+                          btnSaveSettings: document.getElementById('btn-save-settings'),
+                          btnCloseSettings: document.getElementById('btn-close-settings'),
+                          modalTabs: document.querySelectorAll('.modal-tab'),
+                          tabContents: document.querySelectorAll('.tab-content'),
+                          btnZoomIn: document.getElementById('btn-zoom-in'),
+                          btnZoomOut: document.getElementById('btn-zoom-out'),
+                          btnZoomReset: document.getElementById('btn-zoom-reset'),
+                          btnOpenBrowser: document.getElementById('btn-open-browser'),
+                          blockingIndicator: document.getElementById('blocking-indicator'),
+                          blockingText: document.getElementById('blocking-text'),
+                          btnClearData: document.getElementById('btn-clear-data'),
+                          clearDataModal: document.getElementById('clear-data-modal'),
+                          btnCancelClear: document.getElementById('btn-cancel-clear'),
+                          btnConfirmClear: document.getElementById('btn-confirm-clear'),
+                          btnReloadPage: document.getElementById('btn-reload-page'),
+                          serviceSearch: document.getElementById('service-search'),
+                          categoryFilter: document.getElementById('category-filter'),
+                          // New elements
+                          activeServicesBadge: document.getElementById('active-services-badge'),
+                          sidebarSearchInput: document.getElementById('sidebar-search-input'),
+                          sidebarCategories: document.getElementById('sidebar-categories'),
+
+                          errorOverlay: document.getElementById('error-overlay'),
+                          errorMessage: document.getElementById('error-message'),
+                          btnRetry: document.getElementById('btn-retry'),
+                          toggleLoadLast: document.getElementById('toggle-load-last'),
+                          defaultServiceSelect: document.getElementById('default-service-select'),
+                              fontSizeSelect: document.getElementById('font-size-select'),
+                          toggleThirdPartyCookies: document.getElementById('toggle-third-party-cookies'),
+                          toggleProxy: document.getElementById('toggle-proxy'),
+                          proxyConfigSection: document.getElementById('proxy-config-section'),
+                          proxyTypeSelect: document.getElementById('proxy-type-select'),
+                          proxyHostInput: document.getElementById('proxy-host-input'),
+                          proxyPortInput: document.getElementById('proxy-port-input'),
+                          updateFrequencySelect: document.getElementById('update-frequency-select'),
+                          customJsEditor: document.getElementById('custom-js-editor'),
+                          customCssEditor: document.getElementById('custom-css-editor'),
+                          btnSaveInjection: document.getElementById('btn-save-injection'),
+                          jsUnsaved: document.getElementById('js-unsaved'),
+                          cssUnsaved: document.getElementById('css-unsaved'),
+                          btnClearCache: document.getElementById('btn-clear-cache'),
+                          btnClearAllData: document.getElementById('btn-clear-all-data'),
+                          clearAllDataModal: document.getElementById('clear-all-data-modal'),
+                          btnCancelClearAll: document.getElementById('btn-cancel-clear-all'),
+                          btnConfirmClearAll: document.getElementById('btn-confirm-clear-all'),
+                          updateDetailsModal: document.getElementById('update-details-modal'),
+                          updateDetailsBody: document.getElementById('update-details-body'),
+                          btnCloseUpdateDetails: document.getElementById('btn-close-update-details'),
+                          btnDismissUpdate: document.getElementById('btn-dismiss-update'),
+                          btnApplyUpdate: document.getElementById('btn-apply-update')
     };
 
     let config = {
@@ -76,16 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
         lastUpdate: null,
         lastUpdateCheck: null,
         defaultService: 'chatgpt',
-        loadLastOpenedAI: true,
-        customJs: '',
-        customCss: '',
-        thirdPartyCookies: false,
-        updateFrequencyDays: 3,
-        fontSize: 'medium',
-        proxyEnabled: false,
-        proxyType: 'http',
-        proxyHost: '',
-        proxyPort: ''
+            loadLastOpenedAI: true,
+            customJs: '',
+            customCss: '',
+            thirdPartyCookies: false,
+            updateFrequencyDays: 3,
+            fontSize: 'medium',
+            proxyEnabled: false,
+            proxyType: 'http',
+            proxyHost: '',
+            proxyPort: ''
     };
     let allServices = [];
     let activeTabs = [];
@@ -168,34 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- LOADING/ERROR OVERLAYS ---
-    const showLoadingOverlay = () => {
-        elements.loadingOverlay.classList.add('visible');
-        elements.errorOverlay.classList.remove('visible');
-        // Simulate progress
-        let progress = 0;
-        elements.loadingProgressBar.style.width = '0%';
-        const interval = setInterval(() => {
-            progress += Math.random() * 15;
-            if (progress > 90) { clearInterval(interval); progress = 90; }
-            elements.loadingProgressBar.style.width = `${progress}%`;
-        }, 300);
-        elements.loadingOverlay._interval = interval;
-    };
-
-    const hideLoadingOverlay = () => {
-        if (elements.loadingOverlay._interval) {
-            clearInterval(elements.loadingOverlay._interval);
-        }
-        elements.loadingProgressBar.style.width = '100%';
-        setTimeout(() => {
-            elements.loadingOverlay.classList.remove('visible');
-            elements.loadingProgressBar.style.width = '0%';
-        }, 200);
-    };
-
+    // --- ERROR OVERLAY ---
     const showErrorOverlay = (errorMsg) => {
-        hideLoadingOverlay();
         elements.errorMessage.textContent = errorMsg || 'Failed to load this service. Check your connection and try again.';
         elements.errorOverlay.classList.add('visible');
     };
@@ -214,14 +187,14 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const escapedCss = css.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
                 webview.executeJavaScript(`
-                    (function() {
-                        const style = document.createElement('style');
-                        style.id = 'aihub-custom-css';
-                        const existing = document.getElementById('aihub-custom-css');
-                        if (existing) existing.remove();
-                        style.textContent = \`${escapedCss}\`;
-                        document.head.appendChild(style);
-                    })();
+                (function() {
+                    const style = document.createElement('style');
+                    style.id = 'aihub-custom-css';
+                    const existing = document.getElementById('aihub-custom-css');
+                    if (existing) existing.remove();
+                    style.textContent = \`${escapedCss}\`;
+                    document.head.appendChild(style);
+                })();
                 `).catch(() => {});
             } catch (e) {}
         }
@@ -240,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (percent !== 100) {
             try {
                 webview.executeJavaScript(`
-                    document.documentElement.style.fontSize = '${percent}%';
+                document.documentElement.style.fontSize = '${percent}%';
                 `).catch(() => {});
             } catch (e) {}
         }
@@ -509,17 +482,17 @@ document.addEventListener('DOMContentLoaded', () => {
         item.className = `service-launcher ${isActive ? 'active' : ''} ${isOpen ? 'is-open' : ''}`;
         item.dataset.id = id;
         item.innerHTML = `
-            <div class="launcher-info">
-                <div class="service-dot" style="background-color: ${bgColor}"></div>
-                <div class="service-name" style="color: ${bgColor}">${escapeHtml(name)}</div>
-            </div>
-            <div style="display:flex; align-items:center; gap:2px;">
-                <button class="btn-fav ${isFavorite ? 'is-favorite' : ''}" data-id="${id}" title="${isFavorite ? 'Remove from favorites' : 'Add to favorites'}">${isFavorite ? '\u2605' : '\u2606'}</button>
-                <div class="launcher-actions">
-                    <button class="btn-xs btn-reload" title="Reload">&#8635;</button>
-                    <button class="btn-xs btn-close" title="Close">&#10005;</button>
-                </div>
-            </div>`;
+        <div class="launcher-info">
+        <div class="service-dot" style="background-color: ${bgColor}"></div>
+        <div class="service-name" style="color: ${bgColor}">${escapeHtml(name)}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:2px;">
+        <button class="btn-fav ${isFavorite ? 'is-favorite' : ''}" data-id="${id}" title="${isFavorite ? 'Remove from favorites' : 'Add to favorites'}">${isFavorite ? '\u2605' : '\u2606'}</button>
+        <div class="launcher-actions">
+        <button class="btn-xs btn-reload" title="Reload">&#8635;</button>
+        <button class="btn-xs btn-close" title="Close">&#10005;</button>
+        </div>
+        </div>`;
 
         item.addEventListener('click', (e) => {
             if (e.target.closest('.btn-close')) closeTab(id);
@@ -584,64 +557,64 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = 'service-setting-item';
             item.innerHTML = `
-                <div class="service-info">
-                    ${isEnabled ? `
-                    <div class="service-reorder-controls">
-                        <button class="btn-reorder" data-id="${id}" data-dir="up" title="Move up">&#9650;</button>
-                        <button class="btn-reorder" data-id="${id}" data-dir="down" title="Move down">&#9660;</button>
-                    </div>` : ''}
-                    <div class="service-info-details">
-                        <div class="service-info-name" style="color: ${bgColor}">${escapeHtml(name)}</div>
-                        <div class="service-info-badges">
-                            ${pricingBadgeHtml}
-                            ${privacyBadgeHtml}
-                        </div>
-                    </div>
+            <div class="service-info">
+            ${isEnabled ? `
+                <div class="service-reorder-controls">
+                <button class="btn-reorder" data-id="${id}" data-dir="up" title="Move up">&#9650;</button>
+                <button class="btn-reorder" data-id="${id}" data-dir="down" title="Move down">&#9660;</button>
+                </div>` : ''}
+                <div class="service-info-details">
+                <div class="service-info-name" style="color: ${bgColor}">${escapeHtml(name)}</div>
+                <div class="service-info-badges">
+                ${pricingBadgeHtml}
+                ${privacyBadgeHtml}
+                </div>
+                </div>
                 </div>
                 <label class="toggle-switch material-toggle">
-                    <input type="checkbox" ${isEnabled ? 'checked' : ''} data-service-id="${id}">
-                    <span class="toggle-slider"></span>
+                <input type="checkbox" ${isEnabled ? 'checked' : ''} data-service-id="${id}">
+                <span class="toggle-slider"></span>
                 </label>`;
 
-            // Toggle handler
-            item.querySelector('input[type="checkbox"]').addEventListener('change', async (e) => {
-                const serviceId = e.target.dataset.serviceId;
-                try {
-                    config.enabledServices = await window.electronAPI.toggleService(serviceId);
-                    populateDefaultServiceSelect();
-                    populateSidebarCategories();
-                    renderSidebarServices();
-                    renderSettingsServices(); // Re-render to show/hide reorder buttons
-                } catch (error) {
-                    e.target.checked = !e.target.checked;
-                }
-            });
-
-            // Reorder handlers
-            item.querySelectorAll('.btn-reorder').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const serviceId = btn.dataset.id;
-                    const dir = btn.dataset.dir;
-                    const order = config.serviceOrder || [...config.enabledServices];
-                    const idx = order.indexOf(serviceId);
-                    if (idx === -1) return;
-                    if (dir === 'up' && idx > 0) {
-                        [order[idx - 1], order[idx]] = [order[idx], order[idx - 1]];
-                    } else if (dir === 'down' && idx < order.length - 1) {
-                        [order[idx], order[idx + 1]] = [order[idx + 1], order[idx]];
-                    }
+                // Toggle handler
+                item.querySelector('input[type="checkbox"]').addEventListener('change', async (e) => {
+                    const serviceId = e.target.dataset.serviceId;
                     try {
-                        config.serviceOrder = await window.electronAPI.setServiceOrder(order);
+                        config.enabledServices = await window.electronAPI.toggleService(serviceId);
+                        populateDefaultServiceSelect();
+                        populateSidebarCategories();
                         renderSidebarServices();
-                        renderSettingsServices();
+                        renderSettingsServices(); // Re-render to show/hide reorder buttons
                     } catch (error) {
-                        console.error('[Reorder] Error:', error);
+                        e.target.checked = !e.target.checked;
                     }
                 });
-            });
 
-            elements.allServicesList.appendChild(item);
+                // Reorder handlers
+                item.querySelectorAll('.btn-reorder').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const serviceId = btn.dataset.id;
+                        const dir = btn.dataset.dir;
+                        const order = config.serviceOrder || [...config.enabledServices];
+                        const idx = order.indexOf(serviceId);
+                        if (idx === -1) return;
+                        if (dir === 'up' && idx > 0) {
+                            [order[idx - 1], order[idx]] = [order[idx], order[idx - 1]];
+                        } else if (dir === 'down' && idx < order.length - 1) {
+                            [order[idx], order[idx + 1]] = [order[idx + 1], order[idx]];
+                        }
+                        try {
+                            config.serviceOrder = await window.electronAPI.setServiceOrder(order);
+                            renderSidebarServices();
+                            renderSettingsServices();
+                        } catch (error) {
+                            console.error('[Reorder] Error:', error);
+                        }
+                    });
+                });
+
+                elements.allServicesList.appendChild(item);
         });
     };
 
@@ -659,17 +632,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Loading state
-        webview.addEventListener('did-start-loading', () => {
-            if (serviceId === currentTabId) {
-                showLoadingOverlay();
-            }
-        });
-
+        // Loading state - inject custom code on stop
         webview.addEventListener('did-stop-loading', () => {
-            if (serviceId === currentTabId) {
-                hideLoadingOverlay();
-            }
             // Inject custom code after page loads
             injectCustomCode(webview);
             applyFontSize(webview);
@@ -677,7 +641,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         webview.addEventListener('did-finish-load', () => {
             if (serviceId === currentTabId) {
-                hideLoadingOverlay();
                 hideErrorOverlay();
             }
             // Inject custom code after page loads
@@ -734,12 +697,12 @@ document.addEventListener('DOMContentLoaded', () => {
             menuItems.push({
                 label: 'Go Back',
                 action: () => { try { webview.goBack(); } catch (err) {} },
-                enabled: webview.canGoBack()
+                           enabled: webview.canGoBack()
             });
             menuItems.push({
                 label: 'Go Forward',
                 action: () => { try { webview.goForward(); } catch (err) {} },
-                enabled: webview.canGoForward()
+                           enabled: webview.canGoForward()
             });
             menuItems.push({
                 label: 'Reload',
@@ -797,7 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     menu.remove();
                     if (item.enabled !== false && item.action) item.action();
                 });
-                menu.appendChild(menuItem);
+                    menu.appendChild(menuItem);
             }
         });
 
@@ -883,7 +846,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             currentTabId = null;
             elements.welcomeScreen.style.display = 'flex';
-            hideLoadingOverlay();
             hideErrorOverlay();
         }
         renderSidebarServices();
@@ -911,231 +873,231 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tab) applyZoom(currentTabId, Math.min(tab.zoomLevel + 0.5, 5));
     };
 
-    const zoomOut = () => {
-        if (!currentTabId) return;
-        const tab = activeTabs.find(t => t.id === currentTabId);
-        if (tab) applyZoom(currentTabId, Math.max(tab.zoomLevel - 0.5, -5));
-    };
+        const zoomOut = () => {
+            if (!currentTabId) return;
+            const tab = activeTabs.find(t => t.id === currentTabId);
+            if (tab) applyZoom(currentTabId, Math.max(tab.zoomLevel - 0.5, -5));
+        };
 
-    const zoomReset = () => {
-        if (!currentTabId) return;
-        applyZoom(currentTabId, 0);
-    };
-
-    // Open current service in default browser
-    const openInBrowser = async () => {
-        if (!currentTabId) return;
-        const tab = activeTabs.find(t => t.id === currentTabId);
-        if (tab) {
-            try {
-                const currentUrl = tab.webview.src || tab.url;
-                if (currentUrl && currentUrl !== 'about:blank') {
-                    await window.electronAPI.openInBrowser(currentUrl);
-                }
-            } catch (error) {
-                console.error('[OpenInBrowser] Failed:', error);
-            }
-        }
-    };
-
-    // --- UPDATE DETAILS MODAL ---
-    const showUpdateDetails = (details) => {
-        if (!details || !details.hasChanges) {
-            elements.updateDetailsBody.innerHTML = '<div class="update-no-changes">No changes detected.</div>';
-        } else {
-            let html = '';
-
-            const renderCategory = (title, items, cssClass) => {
-                if (items.length === 0) return '';
-                return `
-                    <div class="update-category">
-                        <div class="update-category-title">${title}</div>
-                        <ul class="update-category-list">
-                            ${items.map(item => `<li class="${cssClass}">${escapeHtml(item)}</li>`).join('')}
-                        </ul>
-                    </div>`;
+            const zoomReset = () => {
+                if (!currentTabId) return;
+                applyZoom(currentTabId, 0);
             };
 
-            html += renderCategory('AI Services Added', details.servicesAdded || [], 'added');
-            html += renderCategory('AI Services Removed', details.servicesRemoved || [], 'removed');
-            html += renderCategory('AI Services Changed', details.servicesChanged || [], 'changed');
-            html += renderCategory('Domain Rules Added/Updated', details.domainsAdded || [], 'added');
-            html += renderCategory('Domain Rules Removed', details.domainsRemoved || [], 'removed');
-            html += renderCategory('Blocked Domains Added', details.alwaysBlockedAdded || [], 'added');
-            html += renderCategory('Blocked Domains Removed', details.alwaysBlockedRemoved || [], 'removed');
-            html += renderCategory('Common Auth Domains Added', details.commonAuthAdded || [], 'added');
-            html += renderCategory('Common Auth Domains Removed', details.commonAuthRemoved || [], 'removed');
-            html += renderCategory('Tracking Parameters Added', details.trackingParamsAdded || [], 'added');
-            html += renderCategory('Tracking Parameters Removed', details.trackingParamsRemoved || [], 'removed');
+            // Open current service in default browser
+            const openInBrowser = async () => {
+                if (!currentTabId) return;
+                const tab = activeTabs.find(t => t.id === currentTabId);
+                if (tab) {
+                    try {
+                        const currentUrl = tab.webview.src || tab.url;
+                        if (currentUrl && currentUrl !== 'about:blank') {
+                            await window.electronAPI.openInBrowser(currentUrl);
+                        }
+                    } catch (error) {
+                        console.error('[OpenInBrowser] Failed:', error);
+                    }
+                }
+            };
 
-            elements.updateDetailsBody.innerHTML = html;
-        }
-        elements.updateDetailsModal.classList.remove('hidden');
-    };
+            // --- UPDATE DETAILS MODAL ---
+            const showUpdateDetails = (details) => {
+                if (!details || !details.hasChanges) {
+                    elements.updateDetailsBody.innerHTML = '<div class="update-no-changes">No changes detected.</div>';
+                } else {
+                    let html = '';
 
-    const hideUpdateDetails = () => {
-        elements.updateDetailsModal.classList.add('hidden');
-        pendingUpdateDetails = null;
-    };
+                    const renderCategory = (title, items, cssClass) => {
+                        if (items.length === 0) return '';
+                        return `
+                        <div class="update-category">
+                        <div class="update-category-title">${title}</div>
+                        <ul class="update-category-list">
+                        ${items.map(item => `<li class="${cssClass}">${escapeHtml(item)}</li>`).join('')}
+                        </ul>
+                        </div>`;
+                    };
 
-    // --- EVENT LISTENERS ---
+                    html += renderCategory('AI Services Added', details.servicesAdded || [], 'added');
+                    html += renderCategory('AI Services Removed', details.servicesRemoved || [], 'removed');
+                    html += renderCategory('AI Services Changed', details.servicesChanged || [], 'changed');
+                    html += renderCategory('Domain Rules Added/Updated', details.domainsAdded || [], 'added');
+                    html += renderCategory('Domain Rules Removed', details.domainsRemoved || [], 'removed');
+                    html += renderCategory('Blocked Domains Added', details.alwaysBlockedAdded || [], 'added');
+                    html += renderCategory('Blocked Domains Removed', details.alwaysBlockedRemoved || [], 'removed');
+                    html += renderCategory('Common Auth Domains Added', details.commonAuthAdded || [], 'added');
+                    html += renderCategory('Common Auth Domains Removed', details.commonAuthRemoved || [], 'removed');
+                    html += renderCategory('Tracking Parameters Added', details.trackingParamsAdded || [], 'added');
+                    html += renderCategory('Tracking Parameters Removed', details.trackingParamsRemoved || [], 'removed');
 
-    elements.toggleSidebarBtn.addEventListener('click', () => elements.sidebar.classList.toggle('hidden'));
+                    elements.updateDetailsBody.innerHTML = html;
+                }
+                elements.updateDetailsModal.classList.remove('hidden');
+            };
 
-    elements.btnSettings.addEventListener('click', () => {
-        renderSettingsServices();
-        populateDefaultServiceSelect();
-        // Reset injection editors from config
-        if (elements.customJsEditor) elements.customJsEditor.value = config.customJs || '';
-        if (elements.customCssEditor) elements.customCssEditor.value = config.customCss || '';
-        injectionDirty = { js: false, css: false };
-        if (elements.jsUnsaved) elements.jsUnsaved.classList.remove('visible');
-        if (elements.cssUnsaved) elements.cssUnsaved.classList.remove('visible');
-        elements.settingsPanel.classList.remove('hidden');
-    });
+            const hideUpdateDetails = () => {
+                elements.updateDetailsModal.classList.add('hidden');
+                pendingUpdateDetails = null;
+            };
 
-    elements.btnCloseSettings.addEventListener('click', () => elements.settingsPanel.classList.add('hidden'));
+            // --- EVENT LISTENERS ---
 
-    elements.btnSaveSettings.addEventListener('click', async () => {
-        const newConfig = {
-            blockingEnabled: elements.toggleBlocking.checked,
-            maxActiveServices: parseInt(elements.maxServicesInput.value) || 3,
-            darkMode: elements.toggleDarkMode.checked,
-            loadLastOpenedAI: elements.toggleLoadLast ? elements.toggleLoadLast.checked : true,
-            defaultService: elements.defaultServiceSelect ? elements.defaultServiceSelect.value : 'chatgpt',
-            thirdPartyCookies: elements.toggleThirdPartyCookies ? elements.toggleThirdPartyCookies.checked : false,
-            updateFrequencyDays: elements.updateFrequencySelect ? parseInt(elements.updateFrequencySelect.value) : 3,
-            fontSize: elements.fontSizeSelect ? elements.fontSizeSelect.value : 'medium'
-        };
-        try {
-            config = await window.electronAPI.saveConfig(newConfig);
-            updateBlockingUI(config.blockingEnabled);
-            applyDarkMode(config.darkMode);
+            elements.toggleSidebarBtn.addEventListener('click', () => elements.sidebar.classList.toggle('hidden'));
 
-            // Save proxy settings
-            if (elements.toggleProxy) {
-                const proxyConfig = {
-                    proxyEnabled: elements.toggleProxy.checked,
-                    proxyType: elements.proxyTypeSelect ? elements.proxyTypeSelect.value : 'http',
-                    proxyHost: elements.proxyHostInput ? elements.proxyHostInput.value : '',
-                    proxyPort: elements.proxyPortInput ? elements.proxyPortInput.value : ''
-                };
-                await window.electronAPI.setProxy(proxyConfig);
-                config.proxyEnabled = proxyConfig.proxyEnabled;
-                config.proxyType = proxyConfig.proxyType;
-                config.proxyHost = proxyConfig.proxyHost;
-                config.proxyPort = proxyConfig.proxyPort;
-            }
-
-            // Apply font size to all active tabs
-            if (config.fontSize !== 'medium') {
-                activeTabs.forEach(tab => applyFontSize(tab.webview));
-            }
-
-            // Apply third-party cookies setting
-            if (elements.toggleThirdPartyCookies) {
-                await window.electronAPI.setThirdPartyCookies(elements.toggleThirdPartyCookies.checked);
-            }
-
-            elements.settingsPanel.classList.add('hidden');
-        } catch (error) {
-            console.error('[Save] Error:', error);
-        }
-    });
-
-    // Proxy toggle
-    if (elements.toggleProxy) {
-        elements.toggleProxy.addEventListener('change', () => {
-            if (elements.proxyConfigSection) {
-                elements.proxyConfigSection.style.display = elements.toggleProxy.checked ? 'block' : 'none';
-            }
-        });
-    }
-
-    // Custom injection save
-    if (elements.btnSaveInjection) {
-        elements.btnSaveInjection.addEventListener('click', async () => {
-            const js = elements.customJsEditor ? elements.customJsEditor.value : '';
-            const css = elements.customCssEditor ? elements.customCssEditor.value : '';
-            try {
-                const result = await window.electronAPI.saveCustomInjection(js, css);
-                config.customJs = result.customJs;
-                config.customCss = result.customCss;
+            elements.btnSettings.addEventListener('click', () => {
+                renderSettingsServices();
+                populateDefaultServiceSelect();
+                // Reset injection editors from config
+                if (elements.customJsEditor) elements.customJsEditor.value = config.customJs || '';
+                if (elements.customCssEditor) elements.customCssEditor.value = config.customCss || '';
                 injectionDirty = { js: false, css: false };
                 if (elements.jsUnsaved) elements.jsUnsaved.classList.remove('visible');
                 if (elements.cssUnsaved) elements.cssUnsaved.classList.remove('visible');
-                // Apply to all active tabs immediately
-                activeTabs.forEach(tab => injectCustomCode(tab.webview));
-            } catch (error) {
-                console.error('[Injection] Error saving:', error);
-            }
-        });
-    }
+                elements.settingsPanel.classList.remove('hidden');
+            });
 
-    // Track unsaved changes in injection editors
-    if (elements.customJsEditor) {
-        elements.customJsEditor.addEventListener('input', () => {
-            injectionDirty.js = true;
-            if (elements.jsUnsaved) elements.jsUnsaved.classList.add('visible');
-        });
-    }
-    if (elements.customCssEditor) {
-        elements.customCssEditor.addEventListener('input', () => {
-            injectionDirty.css = true;
-            if (elements.cssUnsaved) elements.cssUnsaved.classList.add('visible');
-        });
-    }
+            elements.btnCloseSettings.addEventListener('click', () => elements.settingsPanel.classList.add('hidden'));
 
-    // Storage buttons
-    if (elements.btnClearCache) {
-        elements.btnClearCache.addEventListener('click', async () => {
-            try {
-                const result = await window.electronAPI.clearCache();
-                if (result.success) {
-                    elements.btnClearCache.textContent = 'Cleared!';
-                    setTimeout(() => { elements.btnClearCache.textContent = 'Clear Cache'; }, 2000);
-                } else {
-                    alert('Failed to clear cache: ' + (result.error || 'Unknown error'));
+            elements.btnSaveSettings.addEventListener('click', async () => {
+                const newConfig = {
+                    blockingEnabled: elements.toggleBlocking.checked,
+                    maxActiveServices: parseInt(elements.maxServicesInput.value) || 3,
+                                                      darkMode: elements.toggleDarkMode.checked,
+                                                      loadLastOpenedAI: elements.toggleLoadLast ? elements.toggleLoadLast.checked : true,
+                                                      defaultService: elements.defaultServiceSelect ? elements.defaultServiceSelect.value : 'chatgpt',
+                                                          thirdPartyCookies: elements.toggleThirdPartyCookies ? elements.toggleThirdPartyCookies.checked : false,
+                                                          updateFrequencyDays: elements.updateFrequencySelect ? parseInt(elements.updateFrequencySelect.value) : 3,
+                                                      fontSize: elements.fontSizeSelect ? elements.fontSizeSelect.value : 'medium'
+                };
+                try {
+                    config = await window.electronAPI.saveConfig(newConfig);
+                    updateBlockingUI(config.blockingEnabled);
+                    applyDarkMode(config.darkMode);
+
+                    // Save proxy settings
+                    if (elements.toggleProxy) {
+                        const proxyConfig = {
+                            proxyEnabled: elements.toggleProxy.checked,
+                            proxyType: elements.proxyTypeSelect ? elements.proxyTypeSelect.value : 'http',
+                            proxyHost: elements.proxyHostInput ? elements.proxyHostInput.value : '',
+                            proxyPort: elements.proxyPortInput ? elements.proxyPortInput.value : ''
+                        };
+                        await window.electronAPI.setProxy(proxyConfig);
+                        config.proxyEnabled = proxyConfig.proxyEnabled;
+                        config.proxyType = proxyConfig.proxyType;
+                        config.proxyHost = proxyConfig.proxyHost;
+                        config.proxyPort = proxyConfig.proxyPort;
+                    }
+
+                    // Apply font size to all active tabs
+                    if (config.fontSize !== 'medium') {
+                        activeTabs.forEach(tab => applyFontSize(tab.webview));
+                    }
+
+                    // Apply third-party cookies setting
+                    if (elements.toggleThirdPartyCookies) {
+                        await window.electronAPI.setThirdPartyCookies(elements.toggleThirdPartyCookies.checked);
+                    }
+
+                    elements.settingsPanel.classList.add('hidden');
+                } catch (error) {
+                    console.error('[Save] Error:', error);
                 }
-            } catch (error) {
-                alert('Error clearing cache');
+            });
+
+            // Proxy toggle
+            if (elements.toggleProxy) {
+                elements.toggleProxy.addEventListener('change', () => {
+                    if (elements.proxyConfigSection) {
+                        elements.proxyConfigSection.style.display = elements.toggleProxy.checked ? 'block' : 'none';
+                    }
+                });
             }
-        });
-    }
 
-    if (elements.btnClearAllData) {
-        elements.btnClearAllData.addEventListener('click', () => {
-            elements.clearAllDataModal.classList.remove('hidden');
-        });
-    }
-
-    if (elements.btnCancelClearAll) {
-        elements.btnCancelClearAll.addEventListener('click', () => elements.clearAllDataModal.classList.add('hidden'));
-    }
-
-    if (elements.btnConfirmClearAll) {
-        elements.btnConfirmClearAll.addEventListener('click', async () => {
-            elements.clearAllDataModal.classList.add('hidden');
-            try {
-                const result = await window.electronAPI.clearAllData();
-                if (result.success) {
-                    // Reload all active tabs
-                    activeTabs.forEach(tab => tab.webview.reload());
-                    elements.btnClearAllData.textContent = 'Cleared!';
-                    setTimeout(() => { elements.btnClearAllData.textContent = 'Clear All Data'; }, 2000);
-                } else {
-                    alert('Failed to clear data: ' + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Error clearing data');
+            // Custom injection save
+            if (elements.btnSaveInjection) {
+                elements.btnSaveInjection.addEventListener('click', async () => {
+                    const js = elements.customJsEditor ? elements.customJsEditor.value : '';
+                    const css = elements.customCssEditor ? elements.customCssEditor.value : '';
+                    try {
+                        const result = await window.electronAPI.saveCustomInjection(js, css);
+                        config.customJs = result.customJs;
+                        config.customCss = result.customCss;
+                        injectionDirty = { js: false, css: false };
+                        if (elements.jsUnsaved) elements.jsUnsaved.classList.remove('visible');
+                        if (elements.cssUnsaved) elements.cssUnsaved.classList.remove('visible');
+                        // Apply to all active tabs immediately
+                        activeTabs.forEach(tab => injectCustomCode(tab.webview));
+                    } catch (error) {
+                        console.error('[Injection] Error saving:', error);
+                    }
+                });
             }
-        });
-    }
 
-    elements.btnZoomIn.addEventListener('click', zoomIn);
-    elements.btnZoomOut.addEventListener('click', zoomOut);
-    if (elements.btnZoomReset) elements.btnZoomReset.addEventListener('click', zoomReset);
-    elements.btnOpenBrowser.addEventListener('click', openInBrowser);
+            // Track unsaved changes in injection editors
+            if (elements.customJsEditor) {
+                elements.customJsEditor.addEventListener('input', () => {
+                    injectionDirty.js = true;
+                    if (elements.jsUnsaved) elements.jsUnsaved.classList.add('visible');
+                });
+            }
+            if (elements.customCssEditor) {
+                elements.customCssEditor.addEventListener('input', () => {
+                    injectionDirty.css = true;
+                    if (elements.cssUnsaved) elements.cssUnsaved.classList.add('visible');
+                });
+            }
+
+            // Storage buttons
+            if (elements.btnClearCache) {
+                elements.btnClearCache.addEventListener('click', async () => {
+                    try {
+                        const result = await window.electronAPI.clearCache();
+                        if (result.success) {
+                            elements.btnClearCache.textContent = 'Cleared!';
+                            setTimeout(() => { elements.btnClearCache.textContent = 'Clear Cache'; }, 2000);
+                        } else {
+                            alert('Failed to clear cache: ' + (result.error || 'Unknown error'));
+                        }
+                    } catch (error) {
+                        alert('Error clearing cache');
+                    }
+                });
+            }
+
+            if (elements.btnClearAllData) {
+                elements.btnClearAllData.addEventListener('click', () => {
+                    elements.clearAllDataModal.classList.remove('hidden');
+                });
+            }
+
+            if (elements.btnCancelClearAll) {
+                elements.btnCancelClearAll.addEventListener('click', () => elements.clearAllDataModal.classList.add('hidden'));
+            }
+
+            if (elements.btnConfirmClearAll) {
+                elements.btnConfirmClearAll.addEventListener('click', async () => {
+                    elements.clearAllDataModal.classList.add('hidden');
+                    try {
+                        const result = await window.electronAPI.clearAllData();
+                        if (result.success) {
+                            // Reload all active tabs
+                            activeTabs.forEach(tab => tab.webview.reload());
+                            elements.btnClearAllData.textContent = 'Cleared!';
+                            setTimeout(() => { elements.btnClearAllData.textContent = 'Clear All Data'; }, 2000);
+                        } else {
+                            alert('Failed to clear data: ' + (result.error || 'Unknown error'));
+                        }
+                    } catch (error) {
+                        alert('Error clearing data');
+                    }
+                });
+            }
+
+            elements.btnZoomIn.addEventListener('click', zoomIn);
+            elements.btnZoomOut.addEventListener('click', zoomOut);
+            if (elements.btnZoomReset) elements.btnZoomReset.addEventListener('click', zoomReset);
+            elements.btnOpenBrowser.addEventListener('click', openInBrowser);
     elements.btnReloadPage.addEventListener('click', () => { if (currentTabId) reloadTab(currentTabId); });
 
     // Retry button
