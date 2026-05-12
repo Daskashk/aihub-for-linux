@@ -1,5 +1,7 @@
 <div align="center">
 
+>⚠️ Experimental, you will find bugs, also frecuents updates.
+
 # AI Hub Desktop
 
 **All your AI assistants. One desktop app. Privacy-first.**
