@@ -73,13 +73,66 @@ document.addEventListener('DOMContentLoaded', () => {
   let pendingUpdateDetails = null;
   let injectionDirty = { js: false, css: false };
 
+  // STEALTH: UA limpio sin "Electron" (como Cherry Studio)
+  let STEALTH_USER_AGENT = '';
+  try {
+    STEALTH_USER_AGENT = navigator.userAgent.replace(/\sElectron\/[\d.]+/, '');
+  } catch (e) {
+    STEALTH_USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // STEALTH: Fingerprint minimo (solo lo seguro)
+  // NO tocar document.createElement ni iframe.contentWindow
+  // ──────────────────────────────────────────────────────────
+  const STEALTH_FINGERPRINT_JS = `(function(){
+    try {
+      // 1. navigator.webdriver = false
+      Object.defineProperty(navigator, 'webdriver', { get: () => false, configurable: true });
+
+      // 2. window.chrome existe en Chrome real
+      if (!window.chrome) { window.chrome = {}; }
+      if (!window.chrome.runtime) { window.chrome.runtime = {}; }
+
+      // 3. navigator.languages
+      if (!navigator.languages || navigator.languages.length === 0) {
+        Object.defineProperty(navigator, 'languages', { get: () => ['es', 'es-ES', 'en', 'en-US'], configurable: true });
+      }
+
+      // 4. Permissions API (rota en Electron)
+      if (navigator.permissions && navigator.permissions.query) {
+        const origQuery = navigator.permissions.query.bind(navigator.permissions);
+        navigator.permissions.query = function(params) {
+          if (params && params.name === 'notifications') {
+            return Promise.resolve({ state: Notification.permission || 'default' });
+          }
+          return origQuery(params);
+        };
+      }
+
+      // 5. Limpiar variables de automatizacion
+      delete window.__nightmare;
+      delete window._phantom;
+      delete window.callPhantom;
+      delete window.phantom;
+      delete window.__selenium_unwrapped;
+      delete window.__driver_evaluate;
+      delete window.__webdriver_evaluate;
+      delete window.__selenium_evaluate;
+      delete window.__fxdriver_evaluate;
+      delete window.__driver_unwrapped;
+      delete window.__webdriver_unwrapped;
+      delete window.__selenium_unwrapped;
+      delete window.__fxdriver_unwrapped;
+    } catch(e) {}
+  })();`;
+
   const formatDate = (isoString) => { if (!isoString) return 'Never'; return new Date(isoString).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }); };
   const generateId = (name) => name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9-]/g, '');
   const escapeHtml = (unsafe) => unsafe ? unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
   const sanitizeColor = (color) => {
-    if (!color) return '#1d99f3'; // Azul Plasma por defecto si no hay color
+    if (!color) return '#1d99f3';
     const hex = color.replace(/^#/, '');
-    // Acepta hex de 3, 4, 6 u 8 caracteres (para colores con transparencia)
     return /^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{4}$|^[0-9A-Fa-f]{6}$|^[0-9A-Fa-f]{8}$/.test(hex) ? `#${hex}` : '#1d99f3';
   };
   const getFontSizePercent = (size) => { const map = { 'x-small': 80, 'small': 90, 'medium': 100, 'large': 110, 'x-large': 120 }; return map[size] || 100; };
@@ -121,6 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!webview) return;
     const p = getFontSizePercent(config.fontSize);
     if (p !== 100) { try { webview.executeJavaScript(`document.documentElement.style.fontSize = '${p}%';`).catch(()=>{}); } catch (e) {} }
+  };
+
+  const injectStealthFingerprint = (webview) => {
+    if (!webview) return;
+    try { webview.executeJavaScript(STEALTH_FINGERPRINT_JS).catch(() => {}); } catch (e) {}
   };
 
   const loadConfig = async () => {
@@ -244,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateActiveServicesBadge();
   };
 
-  // FIX 1: LÓGICA DE COLORES DEL SIDEBAR (Sin punto, nombre con color)
   const createSidebarItem = (service) => {
     const [name, url, type, privacy, color] = service;
     const id = generateId(name); const bgColor = sanitizeColor(color);
@@ -274,7 +331,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const toggleFavorite = async (serviceId) => { try { config.favoriteServices = await window.electronAPI.toggleFavorite(serviceId); renderSidebarServices(); populateSidebarCategories(); } catch (error) {} };
 
-  // FIX 2: LÓGICA DE COLORES EN AJUSTES (Punto de color, nombre normal)
   const renderSettingsServices = () => {
     elements.allServicesList.innerHTML = '';
     let filteredServices = allServices;
@@ -322,15 +378,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+  // ──────────────────────────────────────────────────────────
+  // WEBVIEW LISTENERS - Basado en Ferdium
+  // Ferdium NO intercepta new-window en el renderer.
+  // Los popups los maneja el main process via
+  // web-contents-created y setWindowOpenHandler.
+  // ──────────────────────────────────────────────────────────
   const setupWebviewListeners = (webview, serviceId) => {
-    webview.addEventListener('new-window', async (e) => {
-      e.preventDefault();
-      if (e.url && (e.url.startsWith('http://') || e.url.startsWith('https://'))) {
-        await window.electronAPI.openLoginWindow(e.url, serviceId);
-      }
+    // Inyectar fingerprint en dom-ready
+    webview.addEventListener('dom-ready', () => {
+      injectStealthFingerprint(webview);
     });
-    webview.addEventListener('did-finish-load', () => { if (serviceId === currentTabId) hideErrorOverlay(); injectCustomCode(webview); applyFontSize(webview); });
+
+    webview.addEventListener('did-finish-load', () => {
+      if (serviceId === currentTabId) hideErrorOverlay();
+      injectStealthFingerprint(webview);
+      injectCustomCode(webview);
+      applyFontSize(webview);
+    });
+
     webview.addEventListener('did-fail-load', (event) => { if (serviceId === currentTabId) showErrorOverlay(`Error: ${event.errorDescription}`); });
+
+    // Re-inyectar fingerprint en cada navegacion
+    webview.addEventListener('did-navigate', () => { injectStealthFingerprint(webview); });
+    webview.addEventListener('did-navigate-in-page', () => { injectStealthFingerprint(webview); });
 
     webview.addEventListener('context-menu', async (e) => {
       e.preventDefault(); const menuItems = [];
@@ -356,10 +427,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeMenu = (e) => { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', closeMenu); } }; setTimeout(() => document.addEventListener('click', closeMenu), 10);
   };
 
+  // ──────────────────────────────────────────────────────────
+  // CREAR TAB - Como Ferdium y Cherry Studio:
+  // - allowpopups (CRITICO para captcha)
+  // - useragent limpio
+  // - NO interceptar new-window (lo hace el main process)
+  // ──────────────────────────────────────────────────────────
   const createTab = (serviceId, url, title) => {
     if (activeTabs.length >= config.maxActiveServices) { alert(`Limit reached (${config.maxActiveServices}). Close a tab first.`); return; }
     const webview = document.createElement('webview');
     webview.dataset.id = serviceId;
+
+    // CRITICO: allowpopups (como Ferdium y Cherry Studio)
+    webview.setAttribute('allowpopups', '');
+
+    // UA sin "Electron"
+    if (STEALTH_USER_AGENT) {
+      webview.setAttribute('useragent', STEALTH_USER_AGENT);
+    }
+
     webview.setAttribute('src', url);
     webview.setAttribute('partition', `persist:${serviceId}`);
 
@@ -393,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                             darkMode: true,
                                             loadLastOpenedAI: elements.toggleLoadLast ? elements.toggleLoadLast.checked : true,
                                             defaultService: elements.defaultServiceSelect ? elements.defaultServiceSelect.value : 'chatgpt',
-                                              thirdPartyCookies: elements.toggleThirdPartyCookies ? elements.toggleThirdPartyCookies.checked : false,
+                                              thirdPartyCookies: elements.toggleThirdPartyCookies ? elements.toggleThirdPartyCookies.checked : true,
                                               updateFrequencyDays: elements.updateFrequencySelect ? parseInt(elements.updateFrequencySelect.value) : 3,
                                             fontSize: elements.fontSizeSelect ? elements.fontSizeSelect.value : 'medium',
                                             proxyEnabled: elements.toggleProxy ? elements.toggleProxy.checked : false,

@@ -23,32 +23,35 @@ contextBridge.exposeInMainWorld("electronAPI", {
       callback(serviceId),
     ),
 
-  // New: Favorites
+  // STEALTH: Obtener el user-agent limpio del proceso principal
+  getStealthUserAgent: () => ipcRenderer.invoke("get-stealth-user-agent"),
+
+  // Favorites
   toggleFavorite: (serviceId) =>
     ipcRenderer.invoke("toggle-favorite", serviceId),
 
-  // New: Service ordering
+  // Service ordering
   setServiceOrder: (order) => ipcRenderer.invoke("set-service-order", order),
 
-  // New: Custom JS/CSS injection
+  // Custom JS/CSS injection
   saveCustomInjection: (js, css) =>
     ipcRenderer.invoke("save-custom-injection", js, css),
 
-  // New: Update details
+  // Update details
   getUpdateDetails: () => ipcRenderer.invoke("get-update-details"),
 
-  // New: Proxy
+  // Proxy
   setProxy: (proxyConfig) => ipcRenderer.invoke("set-proxy", proxyConfig),
 
-  // New: Apply proxy to session
+  // Apply proxy to session
   applyProxyToSession: (serviceId) =>
     ipcRenderer.invoke("apply-proxy-to-session", serviceId),
 
-  // New: Third-party cookies
+  // Third-party cookies
   setThirdPartyCookies: (enabled) =>
     ipcRenderer.invoke("set-third-party-cookies", enabled),
 
-  // New: Auto-update notification from main process
+  // Auto-update notification from main process
   onAutoUpdateAvailable: (callback) =>
     ipcRenderer.on("auto-update-available", (event, details) =>
       callback(details),

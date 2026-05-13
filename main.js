@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, session, shell, webContents } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -10,12 +10,45 @@ const dataDir = path.join(app.getPath('userData'), 'data');
 const servicesPath = path.join(dataDir, 'remote_services.json');
 const rulesPath = path.join(dataDir, 'remote_rules.json');
 
+// ──────────────────────────────────────────────────────────
+// LECCIONES DE FERDIUM Y CHERRY STUDIO:
+//
+// 1. Ferdium desactiva CrossOriginOpenerPolicy globalmente
+// 2. Cherry Studio desactiva webSecurity y allowRunningInsecureContent
+// 3. Ambos usan allowpopups en los webviews
+// 4. Ambos setean UA limpio a nivel de sesion y app.userAgentFallback
+// 5. Ferdium tiene setPermissionRequestHandler con allowlist
+// 6. Cherry Studio elimina X-Frame-Options Y Content-Security-Policy completos
+// 7. Ferdium permite new-window popups como BrowserWindow hijos
+// 8. NINGUNO usa sandbox:true en el BrowserWindow principal
+// ──────────────────────────────────────────────────────────
+
+// STEALTH: User-Agent sin "Electron" (como hacen Ferdium y Cherry Studio)
+let STEALTH_USER_AGENT = '';
+function computeStealthUA() {
+  try {
+    const realUA = session.defaultSession.getUserAgent();
+    // Quitar "Electron/x.x.x" del UA
+    STEALTH_USER_AGENT = realUA.replace(/\sElectron\/[\d.]+/, '');
+    // Setear como fallback global (como hace Ferdium)
+    app.userAgentFallback = STEALTH_USER_AGENT;
+  } catch (e) {
+    const p = process.platform;
+    const uaPlatform = p === 'win32' ? 'Windows NT 10.0; Win64; x64' : p === 'darwin' ? 'Macintosh; Intel Mac OS X 10_15_7' : 'X11; Linux x86_64';
+    STEALTH_USER_AGENT = `Mozilla/5.0 (${uaPlatform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${process.versions.chrome} Safari/537.36`;
+    app.userAgentFallback = STEALTH_USER_AGENT;
+  }
+}
+
+// STEALTH: Desactivar SameSite por defecto (necesario para captcha cross-domain)
+app.commandLine.appendSwitch('disable-features', 'SameSiteByDefaultCookies,CookiesWithoutSameSiteMustBeSecure,CrossOriginOpenerPolicy');
+
 // --- DEFAULT CONFIG ---
 const defaultConfig = {
   lastUpdate: null, lastUpdateCheck: null, blockingEnabled: true, maxActiveServices: 3,
   darkMode: true, enabledServices: ['chatgpt', 'claude', 'gemini'], favoriteServices: [],
   serviceOrder: [], lastActiveService: null, defaultService: 'chatgpt', loadLastOpenedAI: true,
-  customJs: '', customCss: '', thirdPartyCookies: false, updateFrequencyDays: 3, fontSize: 'medium',
+  customJs: '', customCss: '', thirdPartyCookies: true, updateFrequencyDays: 3, fontSize: 'medium',
   proxyEnabled: false, proxyType: 'http', proxyHost: '', proxyPort: '',
   remoteUrls: {
     services: "https://raw.githubusercontent.com/SilentCoderHere/aihub-config-data/main/ai_services_list.json",
@@ -90,6 +123,14 @@ function isDomainAllowed(hostname, serviceDomains, serviceId) {
   return false;
 }
 
+// ──────────────────────────────────────────────────────────
+// CONFIGURACION DE SESION POR SERVICIO
+// Basado en Ferdium y Cherry Studio:
+// - UA limpio a nivel de sesion
+// - Permission handler con allowlist (como Ferdium)
+// - CSP/XFO stripping (como Cherry Studio)
+// - Sec-CH-UA limpio (quitar "Electron")
+// ──────────────────────────────────────────────────────────
 function setupSessionBlocking(serviceId) {
   if (!serviceId) return;
   const partitionName = `persist:${serviceId}`;
@@ -97,23 +138,86 @@ function setupSessionBlocking(serviceId) {
   const ses = session.fromPartition(partitionName);
   initializedSessions.add(partitionName);
 
+  // UA limpio en la sesion (como Cherry Studio)
+  if (STEALTH_USER_AGENT) {
+    ses.setUserAgent(STEALTH_USER_AGENT);
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Permission handler con allowlist (copiado de Ferdium)
+  // Sin esto, los permisos se auto-deniegan y el captcha se cuelga
+  // ──────────────────────────────────────────────────────────
+  ses.setPermissionRequestHandler((webContents, permission, callback) => {
+    const allowed = [
+      'media', 'notifications', 'fullscreen', 'pointerLock',
+      'display-capture', 'idle-detection', 'clipboard-read',
+      'clipboard-sanitized-write', 'speaker-selection'
+    ];
+    callback(allowed.includes(permission));
+  });
+
+  ses.setPermissionCheckHandler((_webContents, permission) => {
+    const allowed = [
+      'media', 'notifications', 'fullscreen', 'pointerLock',
+      'display-capture', 'idle-detection', 'clipboard-read',
+      'clipboard-sanitized-write', 'speaker-selection'
+    ];
+    return allowed.includes(permission);
+  });
+
+  // ──────────────────────────────────────────────────────────
+  // CSP/XFO stripping (como Cherry Studio)
+  // Eliminar X-Frame-Options Y Content-Security-Policy completos
+  // Cherry Studio hace esto y le funciona con todos los servicios de IA
+  // ──────────────────────────────────────────────────────────
   ses.webRequest.onHeadersReceived((details, callback) => {
     let responseHeaders = details.responseHeaders;
     if (responseHeaders) {
+      // Eliminar X-Frame-Options (ambas capitalizaciones)
       delete responseHeaders['x-frame-options'];
-      if (responseHeaders['content-security-policy']) {
-        responseHeaders['content-security-policy'] = responseHeaders['content-security-policy'].map(val => {
-          return val.replace(/frame-ancestors[^;]*;?/g, '');
-        });
-      }
+      delete responseHeaders['X-Frame-Options'];
+
+      // Eliminar Content-Security-Policy completo (como Cherry Studio)
+      // Esto permite que los iframes del captcha funcionen sin restricciones
+      delete responseHeaders['content-security-policy'];
+      delete responseHeaders['Content-Security-Policy'];
+
+      // Eliminar COOP y COEP
+      delete responseHeaders['cross-origin-opener-policy'];
+      delete responseHeaders['cross-origin-embedder-policy'];
+      delete responseHeaders['Cross-Origin-Opener-Policy'];
+      delete responseHeaders['Cross-Origin-Embedder-Policy'];
     }
     callback({ responseHeaders });
+  });
+
+  // ──────────────────────────────────────────────────────────
+  // Sec-CH-UA limpio (quitar "Electron" de Client Hints)
+  // ──────────────────────────────────────────────────────────
+  ses.webRequest.onBeforeSendHeaders((details, callback) => {
+    const headers = details.requestHeaders || {};
+    for (const key of Object.keys(headers)) {
+      const val = headers[key];
+      const isArr = Array.isArray(val);
+      const items = isArr ? val : [val];
+
+      if (key.toLowerCase() === 'sec-ch-ua') {
+        const cleaned = items.map(v => String(v).replace(/,?\s*"Electron[^"]*";v="[^"]*"/g, '').replace(/^\s*,\s*/, ''));
+        headers[key] = isArr ? cleaned : cleaned[0];
+      }
+      if (key.toLowerCase() === 'sec-ch-ua-full-version-list') {
+        const cleaned = items.map(v => String(v).replace(/,?\s*"Electron[^"]*";v="[^"]*"/g, '').replace(/^\s*,\s*/, ''));
+        headers[key] = isArr ? cleaned : cleaned[0];
+      }
+    }
+    callback({ requestHeaders: headers });
   });
 
   if (config.proxyEnabled && config.proxyHost && config.proxyPort) {
     ses.setProxy({ proxyRules: `${config.proxyType}://${config.proxyHost}:${config.proxyPort}` }).catch(() => {});
   }
 
+  // Domain blocking (original de AI Hub - mantener intacto)
   ses.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
     try {
       const url = new URL(details.url);
@@ -153,29 +257,101 @@ async function updateRemoteData() {
 }
 
 // --- MAIN WINDOW CREATION ---
+// ──────────────────────────────────────────────────────────
+// CRUCIAL: sandbox:false y webSecurity:false
+// Ferdium usa sandbox:false, Cherry Studio usa ambos.
+// sandbox:true bloquea APIs que el captcha necesita.
+// webSecurity:false permite requests cross-origin del captcha.
+// ──────────────────────────────────────────────────────────
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1200, height: 800, minWidth: 800, minHeight: 600,
     title: 'AI Hub Desktop', backgroundColor: '#1a1b1e', autoHideMenuBar: true,
     webPreferences: {
-      nodeIntegration: false, contextIsolation: true, sandbox: true,
-      webviewTag: true, allowRunningInsecureContent: false,
-      disableHtmlFullscreenWindowResize: true, preload: path.join(__dirname, 'preload.js')
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,              // CRUCIAL: como Ferdium y Cherry Studio
+      webSecurity: false,          // CRUCIAL: como Cherry Studio - permite cross-origin
+      webviewTag: true,
+      allowRunningInsecureContent: true,  // Como Cherry Studio
+      disableHtmlFullscreenWindowResize: true,
+      preload: path.join(__dirname, 'preload.js')
     }
   });
   mainWindow.loadFile(path.join(__dirname, 'ui', 'index.html'));
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    try { const u = new URL(url); if (u.protocol === 'https:' || u.protocol === 'http:') shell.openExternal(url); } catch (e) {}
+
+  // ──────────────────────────────────────────────────────────
+  // setWindowOpenHandler del mainWindow (como Ferdium)
+  // Ferdium permite new-window como BrowserWindow hijo
+  // que comparte la sesion del servicio. Esto es CRITICO
+  // para que los popups del captcha/OAuth funcionen.
+  // ──────────────────────────────────────────────────────────
+  mainWindow.webContents.setWindowOpenHandler(({ url, disposition }) => {
+    // Si es un popup (window.open, target=_blank desde JS), permitirlo
+    // como BrowserWindow hijo con la misma sesion
+    if (disposition === 'new-window') {
+      return {
+        action: 'allow',
+        outlivesOpener: false,
+        overrideBrowserWindowOptions: {
+          parent: mainWindow,
+          fullscreenable: false,
+        }
+      };
+    }
+    // Links normales → abrir en navegador externo
+    try {
+      const u = new URL(url);
+      if (u.protocol === 'https:' || u.protocol === 'http:') shell.openExternal(url);
+    } catch (e) {}
     return { action: 'deny' };
   });
+
   mainWindow.on('closed', () => { mainWindow = null; });
 }
+
+// ──────────────────────────────────────────────────────────
+// Global web-contents-created handler (como Ferdium)
+// Configura TODOS los webContents (incluidos los de webviews)
+// con el handler correcto de popups.
+// ──────────────────────────────────────────────────────────
+app.on('web-contents-created', (_event, contents) => {
+  // No interceptar el mainWindow (ya tiene su propio handler)
+  if (contents === mainWindow?.webContents) return;
+
+  // Para webviews y otros webContents:
+  // Permitir popups (new-window) como BrowserWindow hijos
+  // Esto es lo que Ferdium hace y es CRITICO para el captcha
+  contents.setWindowOpenHandler(({ url, disposition }) => {
+    if (disposition === 'new-window') {
+      return {
+        action: 'allow',
+        outlivesOpener: false,
+        overrideBrowserWindowOptions: {
+          parent: mainWindow,
+          fullscreenable: false,
+          webPreferences: {
+            session: contents.session  // Compartir sesion con el webview padre
+          }
+        }
+      };
+    }
+    // Links normales → navegador externo
+    try {
+      if (url.startsWith('https://') || url.startsWith('http://')) {
+        shell.openExternal(url);
+      }
+    } catch (e) {}
+    return { action: 'deny' };
+  });
+});
 
 // --- IPC HANDLERS ---
 ipcMain.handle('get-config', () => config);
 ipcMain.handle('get-services', () => loadServices());
 ipcMain.handle('get-rules', () => loadRules());
 ipcMain.handle('update-remote-data', async () => await updateRemoteData());
+ipcMain.handle('get-stealth-user-agent', () => STEALTH_USER_AGENT);
 
 ipcMain.handle('save-config', (event, newConfig) => {
   if (!newConfig) return config;
@@ -204,15 +380,37 @@ ipcMain.handle('clear-service-data', async (event, serviceId) => { const s = ses
 ipcMain.handle('clear-all-data', async () => { for(const id of config.enabledServices){ try { const s = session.fromPartition(`persist:${id}`); await s.clearStorageData(); await s.clearCache(); } catch(e){} } return { success: true }; });
 ipcMain.handle('clear-cache', async () => { for(const id of config.enabledServices){ try { await session.fromPartition(`persist:${id}`).clearCache(); } catch(e){} } return { success: true }; });
 ipcMain.handle('open-in-browser', async (event, url) => { await shell.openExternal(url); return { success: true }; });
+
+// Ventana de login con sesion compartida (como Ferdium)
 ipcMain.handle('open-login-window', async (event, url, serviceId) => {
-  const loginWindow = new BrowserWindow({ width: 900, height: 700, webPreferences: { partition: `persist:${serviceId}`, nodeIntegration: false, contextIsolation: true } });
+  const loginWindow = new BrowserWindow({
+    width: 900, height: 700,
+    parent: mainWindow,
+    fullscreenable: false,
+    webPreferences: {
+      partition: `persist:${serviceId}`,
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false
+    }
+  });
+  if (STEALTH_USER_AGENT) {
+    loginWindow.webContents.setUserAgent(STEALTH_USER_AGENT);
+  }
   loginWindow.loadURL(url);
   loginWindow.on('closed', () => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('login-window-closed', serviceId); });
   return { success: true };
 });
+
 ipcMain.handle('get-app-version', () => { try { return require('./package.json').version || '0.6.1-beta'; } catch (e) { return '0.6.1-beta'; } });
 ipcMain.handle('clean-url-tracking', async (event, url) => { return { cleanedUrl: url, wasModified: false }; });
 
 // --- APP LIFECYCLE ---
-app.whenReady().then(() => { loadConfig(); loadRules(); createMainWindow(); setTimeout(() => updateRemoteData(), 3000); });
+app.whenReady().then(() => {
+  computeStealthUA();
+  loadConfig();
+  loadRules();
+  createMainWindow();
+  setTimeout(() => updateRemoteData(), 3000);
+});
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
