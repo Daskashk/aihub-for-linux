@@ -1,4 +1,4 @@
-name: Build and Release All Platforms
+name: Build and Release Linux
 
 on:
   workflow_dispatch:
@@ -6,45 +6,38 @@ on:
 permissions:
   contents: write
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            artifact_name: linux-packages
-            build_command: npx electron-builder --linux --publish never
-
-          - os: windows-latest
-            artifact_name: windows-installer
-            build_command: npx electron-builder --win --publish never
-
-          - os: macos-latest
-            artifact_name: macos-installer
-            build_command: npx electron-builder --mac --publish never
-
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-python@v5
         with:
-          node-version: 24
+          python-version: '3.12'
 
-      - run: npm install
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi python3-gi-cairo gir1.2-webkit2-4.1 \
+                                  gir1.2-gtk-3.0 python3-pip patchelf
 
-      - name: Build ${{ matrix.os }}
-        run: ${{ matrix.build_command }}
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build standalone binary
+        run: |
+          pyinstaller --onefile --name "aihub-desktop" \
+                      --add-data "README.md:." \
+                      app.py
+          mv dist/aihub-desktop dist/aihub-desktop-x86_64.AppImage 2>/dev/null || true
+          ls -lh dist/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
+          name: linux-packages
           path: dist/*
           if-no-files-found: error
 
@@ -61,20 +54,13 @@ jobs:
           path: release-files
           merge-multiple: true
 
-      - name: Remove unwanted files (cleanup)
-        run: |
-          echo "Before cleanup:"
-          ls -la release-files/
-          
-          rm -f release-files/*.yml release-files/*.yaml release-files/*.blockmap
-          
-          echo "After cleanup:"
-          ls -la release-files/
+      - name: List files
+        run: ls -la release-files/
 
       - name: Get version
         id: pkg_version
         run: |
-          PKG_VERSION=$(node -p "require('./package.json').version")
+          PKG_VERSION=$(python3 -c "import json; print(json.load(open('package.json'))['version'])")
           echo "VERSION=$PKG_VERSION" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
@@ -82,9 +68,8 @@ jobs:
         with:
           tag_name: v${{ steps.pkg_version.outputs.VERSION }}
           name: Release v${{ steps.pkg_version.outputs.VERSION }}
-          body: "AI Hub Desktop – cross-platform release."
+          body: "AI Hub Desktop v${{ steps.pkg_version.outputs.VERSION }} – Linux native (GTK + WebKitGTK)."
           files: release-files/*
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          

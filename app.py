@@ -148,6 +148,7 @@ class AIHubApp(Gtk.Application):
         self.cat_container = None
         self.header_update_btn = None
         self.blocking_indicator = None
+        self._rebuild_settings_list = None
 
     # ── helpers ──────────────────────────────────────────────
     def gen_id(self, n): return gen_id(n)
@@ -250,6 +251,10 @@ class AIHubApp(Gtk.Application):
     def _on_update_done(self):
         self._rebuild_list()
         self._flash('Updated')
+        if self.config.get('loadLastOpenedAI') and self.config.get('lastActiveService') and not self.current_sid:
+            sid = self.config['lastActiveService']
+            svc = self._find(sid)
+            if svc: self.open_service(sid, svc[1], svc[0])
 
     # ── services ─────────────────────────────────────────────
     def open_service(self, sid, url, name):
@@ -321,7 +326,7 @@ class AIHubApp(Gtk.Application):
         self.stack.set_visible_child_name('_welcome')
 
     def _on_policy(self, wv, d, t, sid):
-        if t == WebKit2.PolicyDecisionType.NAVIGATION_ACTION:
+        if t in (WebKit2.PolicyDecisionType.NAVIGATION_ACTION, WebKit2.PolicyDecisionType.NEW_WINDOW_ACTION):
             uri = d.get_request().get_uri()
             try:
                 p = urlparse(uri)
@@ -341,7 +346,7 @@ class AIHubApp(Gtk.Application):
             css = self.config.get('customCss', '')
             jsc = self.config.get('customJs', '')
             if css:
-                esc = css.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$')
+                esc = css.replace('\\', '\\\\').replace('`', '\\`').replace('${', '\\${')
                 self._run_js(wv, '(function(){var s=document.createElement("style");s.id="aihub-css";var e=document.getElementById("aihub-css");if(e)e.remove();s.textContent=`' + esc + '`;document.head.appendChild(s);})()')
             if jsc: self._run_js(wv, jsc)
 
@@ -410,11 +415,11 @@ class AIHubApp(Gtk.Application):
             dot.connect('draw', lambda w, c: c.set_source_rgba(cr.red, cr.green, cr.blue, 1) or c.arc(3.5, 3.5, 3.5, 0, 6.283) or c.fill())
             hb.pack_start(dot, False, False, 0)
 
-            nl = Gtk.Label(label=name, xalign=0)
-            nl.set_ellipsize(Pango.EllipsizeMode.END)
-            nl.set_max_width_chars(14)
+            nl = Gtk.Label(xalign=0)
             nl.set_markup(f'<b>{name}</b>')
             nl.set_use_markup(True)
+            nl.set_ellipsize(Pango.EllipsizeMode.END)
+            nl.set_max_width_chars(14)
             hb.pack_start(nl, True, True, 0)
 
             fav_b = Gtk.Button(label='\u2605' if is_fav else '\u2606')
@@ -804,27 +809,6 @@ class AIHubApp(Gtk.Application):
         chk_ext = Gtk.CheckButton(label='Open external links in browser', active=self.config.get('openExternalLinks', False))
         g.pack_start(chk_ext, False, False, 0)
 
-        # proxy frame
-        pf = Gtk.Frame(label='Proxy')
-        pb = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        pb.set_margin_start(8); pb.set_margin_end(8); pb.set_margin_top(8); pb.set_margin_bottom(8)
-
-        chk_pr = Gtk.CheckButton(label='Enable proxy', active=self.config.get('proxyEnabled', False))
-        pb.pack_start(chk_pr, False, False, 0)
-
-        hp = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-        cp = Gtk.ComboBoxText()
-        cp.append('http','HTTP'); cp.append('socks5','SOCKS5')
-        cp.set_active_id(self.config.get('proxyType','http'))
-        hp.pack_start(cp, False, False, 0)
-        eph = Gtk.Entry(); eph.set_placeholder_text('Host'); eph.set_text(self.config.get('proxyHost',''))
-        hp.pack_start(eph, True, True, 0)
-        epp = Gtk.Entry(); epp.set_placeholder_text('Port'); epp.set_width_chars(6); epp.set_text(self.config.get('proxyPort',''))
-        hp.pack_start(epp, False, False, 0)
-        pb.pack_start(hp, False, False, 0)
-        pf.add(pb)
-        g.pack_start(pf, False, False, 0)
-
         hu = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         hu.pack_start(Gtk.Label(label='Update frequency:'), False, False, 0)
         cu = Gtk.ComboBoxText()
@@ -848,6 +832,27 @@ class AIHubApp(Gtk.Application):
 
         nb.append_page(g, Gtk.Label(label='General'))
 
+        # ── Network ──
+        nw = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        nw.set_margin_start(12); nw.set_margin_end(12); nw.set_margin_top(12)
+
+        chk_pr = Gtk.CheckButton(label='Enable proxy', active=self.config.get('proxyEnabled', False))
+        nw.pack_start(chk_pr, False, False, 0)
+
+        hp = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        nw.pack_start(hp, False, False, 0)
+
+        cp = Gtk.ComboBoxText()
+        cp.append('http','HTTP'); cp.append('socks5','SOCKS5')
+        cp.set_active_id(self.config.get('proxyType','http'))
+        hp.pack_start(cp, False, False, 0)
+        eph = Gtk.Entry(); eph.set_placeholder_text('Host'); eph.set_text(self.config.get('proxyHost',''))
+        hp.pack_start(eph, True, True, 0)
+        epp = Gtk.Entry(); epp.set_placeholder_text('Port'); epp.set_width_chars(6); epp.set_text(self.config.get('proxyPort',''))
+        hp.pack_start(epp, False, False, 0)
+
+        nb.append_page(nw, Gtk.Label(label='Network'))
+
         # ── Services ──
         st = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         st.set_margin_start(12); st.set_margin_end(12); st.set_margin_top(12)
@@ -859,14 +864,14 @@ class AIHubApp(Gtk.Application):
 
         ss = Gtk.ScrolledWindow()
         sl = Gtk.ListBox()
-        eids = set(self.config.get('enabledServices', []))
-        order = self.config.get('serviceOrder', [])
-        all_svcs = sorted(self.services_data, key=lambda s: order.index(self.gen_id(s[0])) if self.gen_id(s[0]) in order else 999)
 
         def rebuild_service_settings(search_text=''):
             for c in sl.get_children(): sl.remove(c)
+            eids = set(self.config.get('enabledServices', []))
+            order = self.config.get('serviceOrder', [])
+            sorted_svcs = sorted(self.services_data, key=lambda s: order.index(self.gen_id(s[0])) if self.gen_id(s[0]) in order else 999)
             q = search_text.lower().strip() if search_text else ''
-            filtered = [s for s in all_svcs if not q or (s[0] and q in s[0].lower())]
+            filtered = [s for s in sorted_svcs if not q or (s[0] and q in s[0].lower())]
             for svc in filtered:
                 sid = self.gen_id(svc[0])
                 ie = sid in eids
@@ -921,6 +926,7 @@ class AIHubApp(Gtk.Application):
 
         svc_search.connect('search-changed', lambda e: rebuild_service_settings(e.get_text()))
         rebuild_service_settings()
+        self._rebuild_settings_list = rebuild_service_settings
 
         ss.add(sl); st.pack_start(ss, True, True, 0)
         nb.append_page(st, Gtk.Label(label='Services'))
@@ -956,7 +962,7 @@ class AIHubApp(Gtk.Application):
         l_ab = Gtk.Label(label='AI Hub Desktop', xalign=0)
         l_ab.set_markup('<b>AI Hub Desktop</b>')
         ab.pack_start(l_ab, False, False, 0)
-        ab.pack_start(Gtk.Label(label='Version 1.0.0 (Python - Linux Native)', xalign=0), False, False, 0)
+        ab.pack_start(Gtk.Label(label='Version 0.1.0-beta (Python - Linux Native)', xalign=0), False, False, 0)
         ab.pack_start(Gtk.Label(label='All-in-one AI assistants desktop application', xalign=0), False, False, 0)
 
         sep1 = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
@@ -1062,6 +1068,8 @@ class AIHubApp(Gtk.Application):
         self.config['serviceOrder'] = o
         self.save_config()
         self._rebuild_list()
+        if hasattr(self, '_rebuild_settings_list') and self._rebuild_settings_list:
+            self._rebuild_settings_list()
 
 
 if __name__ == '__main__':

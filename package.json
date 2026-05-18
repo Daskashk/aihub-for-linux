@@ -1,6 +1,6 @@
 {
   "name": "aihub-desktop",
-  "version": "1.0.0-python",
+  "version": "0.1.0-beta",
   "description": "AI Hub Desktop - Native Linux (GTK + WebKitGTK)",
   "scripts": {
     "start": "python3 app.py"
