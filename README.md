@@ -1,10 +1,10 @@
 <div align="center">
 
-> **Linux-only.** This project has no plans for Windows or macOS support.
+> **Linux-only.** This project has no plans for Windows or macOS support. Experiemntal, can be unestable, and will have frecuents updates and changes.
 
 # AI Hub Desktop
 
-**All your AI assistants. One desktop app. Privacy-first.**
+**All your AI assistants. One Linux app. Privacy-first.**
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://opensource.org/licenses/GPL-3.0)
 [![Version](https://img.shields.io/badge/Version-0.1.0--beta-green.svg)](https://github.com/Daskashk/aihub-desktop/releases)
@@ -164,7 +164,7 @@ aihub-desktop/
     └── custom injection    # JS/CSS on load‑finished
 ```
 
-No HTML, no CSS files, no JavaScript — pure Python with native GTK widgets. Only the AI service pages themselves use WebKit.
+Python with native GTK widgets. Only the AI service pages themselves use WebKit.
 
 ---
 
@@ -182,7 +182,7 @@ No HTML, no CSS files, no JavaScript — pure Python with native GTK widgets. On
 
 ## 🤝 Contributing
 
-Contributions welcome! This project is **Linux-only** by design — please don't submit Windows/macOS ports.
+Contributions welcome! This project is **Linux-only** by design — please don't submit Windows/macOS ports, if you want you can fork this project and make what you want.
 
 - **Code** — Fix bugs, add features, improve GTK styling
 - **Testing** — Report issues, test on different distros
@@ -193,10 +193,8 @@ Contributions welcome! This project is **Linux-only** by design — please don't
 
 ## 🙏 Credits & Acknowledgements
 
-- **[AI Hub for Android](https://github.com/SilentCoderHere/aihub)** by [SilentCoder](https://github.com/SilentCoderHere) — the original Android app this desktop port is based on
+- **[AI Hub for Android](https://github.com/SilentCoderHere/aihub)** by [SilentCoder](https://github.com/SilentCoderHere) — the original Android app this Linux port is based on
 - **[aihub-config-data](https://github.com/SilentCoderHere/aihub-config-data)** — shared remote configuration for services and domain rules
-- **[Nora](https://github.com/nonbili/Nora)** — original unified AI assistant concept
-- **[gptAssist](https://github.com/woheller69/gptAssist)** — approach to blocking unnecessary connections in WebView-based AI apps
 - Community: [#aihub-silentcoder:matrix.org](https://matrix.to/#/#aihub-silentcoder:matrix.org) · [#topic-guild:matrix.org](https://matrix.to/#/#topic-guild:matrix.org) · [@topicguild](https://t.me/topicsguild)
 
 ---
@@ -211,6 +209,6 @@ GNU General Public License v3.0. See [LICENSE](LICENSE) for details.
 
 **[⬆ Back to Top](#ai-hub-desktop)**
 
-Linux-only · Made with Python/GTK · Based on [AI Hub for Android](https://github.com/SilentCoderHere/aihub)
+Linux-only · Made with Python/GTK · Made with AI assistant · Based on [AI Hub for Android](https://github.com/SilentCoderHere/aihub)
 
 </div>
