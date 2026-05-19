@@ -2,7 +2,7 @@
 
 > **Linux-only.** This project has no plans for Windows or macOS support. Experiemntal, can be unestable, and will have frecuents updates and changes.
 
-# AI Hub Desktop
+# AI Hub for Linux
 
 **All your AI assistants. One Linux app. Privacy-first.**
 
@@ -70,7 +70,7 @@ Clear page cache or all data with confirmation dialogs. Cache clearing only remo
 
 ## 🤖 Supported AI Services
 
-AI Hub Desktop currently supports **65+ AI assistants** across multiple categories. The full list is dynamically loaded from the [config repository](https://github.com/SilentCoderHere/aihub-config-data).
+AI Hub for Linux currently supports **65+ AI assistants** across multiple categories. The full list is dynamically loaded from the [config repository](https://github.com/SilentCoderHere/aihub-config-data).
 
 ### Popular
 ChatGPT, Claude, Gemini, DeepSeek, Grok, Copilot, Perplexity, Meta AI

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AI Hub Desktop - Modern GTK UI + WebKitGTK services"""
+"""AI Hub for Linux - Modern GTK UI + WebKitGTK services"""
 
 import os, sys, json, threading, urllib.request, urllib.error, re, warnings
 from urllib.parse import urlparse
@@ -37,9 +37,10 @@ DEFAULT_CONFIG = {
     'blockingEnabled': True, 'maxActiveServices': 9, 'darkMode': True,
     'enabledServices': ['chatgpt', 'claude', 'gemini'],
     'favoriteServices': [], 'serviceOrder': [],
-    'lastActiveService': None, 'defaultService': 'chatgpt', 'loadLastOpenedAI': True,
+    'lastActiveService': None, 'defaultService': '', 'loadLastOpenedAI': True,
     'customJs': '', 'customCss': '', 'thirdPartyCookies': True, 'fontSize': 'medium',
     'openExternalLinks': False,
+    'useSystemProxy': False,
     'proxyEnabled': False, 'proxyType': 'http', 'proxyHost': '', 'proxyPort': '',
     'lastUpdate': None, 'lastUpdateCheck': None, 'updateFrequencyDays': 3,
     'remoteUrls': {
@@ -142,7 +143,6 @@ class AIHubApp(Gtk.Application):
 
         self.win = None
         self.svc_container = None
-        self.tabs_container = None
         self.stack = None
         self.search_entry = None
         self.cat_container = None
@@ -251,10 +251,16 @@ class AIHubApp(Gtk.Application):
     def _on_update_done(self):
         self._rebuild_list()
         self._flash('Updated')
-        if self.config.get('loadLastOpenedAI') and self.config.get('lastActiveService') and not self.current_sid:
+        if self.current_sid: return
+        if self.config.get('loadLastOpenedAI') and self.config.get('lastActiveService'):
             sid = self.config['lastActiveService']
             svc = self._find(sid)
             if svc: self.open_service(sid, svc[1], svc[0])
+        elif not self.config.get('loadLastOpenedAI'):
+            ds = self.config.get('defaultService', '')
+            if ds:
+                svc = self._find(ds)
+                if svc: self.open_service(ds, svc[1], svc[0])
 
     # ── services ─────────────────────────────────────────────
     def open_service(self, sid, url, name):
@@ -286,6 +292,7 @@ class AIHubApp(Gtk.Application):
         s.set_media_playback_requires_user_gesture(False)
         s.set_user_agent(USER_AGENT)
         if not self.config.get('thirdPartyCookies', True): s.set_enable_private_browsing(True)
+        self._apply_proxy()
         wv.connect('decide-policy', lambda w, d, t, i=sid: self._on_policy(w, d, t, i))
         wv.connect('load-changed', lambda w, e, i=sid: self._on_load(w, e, i))
         wv.load_uri(url)
@@ -381,7 +388,6 @@ class AIHubApp(Gtk.Application):
             l.get_style_context().add_class('section-label')
             self.svc_container.pack_start(l, False, False, 0)
             self.svc_container.show_all()
-            self._update_tabs()
             return
 
         flist = [s for s in svcs if self.gen_id(s[0]) in favs]
@@ -456,55 +462,6 @@ class AIHubApp(Gtk.Application):
 
         self.svc_container.add(sec)
         self.svc_container.show_all()
-        self._update_tabs()
-
-    def _update_tabs(self):
-        if not self.tabs_container: return
-        for c in self.tabs_container.get_children(): self.tabs_container.remove(c)
-        if not self.tab_order:
-            self.tabs_expander.set_visible(False)
-            return
-        self.tabs_expander.set_visible(True)
-        self.tabs_expander.set_label(f'Open tabs ({len(self.tab_order)})')
-        self.tabs_expander.set_expanded(True)
-
-        for sid in self.tab_order:
-            svc = self._find(sid)
-            name = svc[0] if svc else sid
-            color = sanitize_color(svc[4] if svc else '#1d99f3')
-            is_active = sid == self.current_sid
-
-            hb = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-            hb.set_margin_start(6); hb.set_margin_end(4)
-            hb.set_margin_top(2); hb.set_margin_bottom(2)
-
-            dot = Gtk.DrawingArea()
-            dot.set_size_request(5, 5)
-            dot.set_valign(Gtk.Align.CENTER)
-            cr = color
-            dot.connect('draw', lambda w, c: c.set_source_rgba(cr.red, cr.green, cr.blue, 1) or c.arc(2.5, 2.5, 2.5, 0, 6.283) or c.fill())
-            hb.pack_start(dot, False, False, 0)
-
-            lbl = Gtk.Label(label=name, xalign=0)
-            lbl.set_ellipsize(Pango.EllipsizeMode.END)
-            hb.pack_start(lbl, True, True, 0)
-
-            cl = Gtk.Button(label='\u2715')
-            cl.get_style_context().add_class('tab-close-btn')
-            cl.connect('clicked', lambda b, i=sid: self.close_service(i))
-            hb.pack_start(cl, False, False, 0)
-
-            eb = Gtk.EventBox()
-            eb.add(hb)
-            eb.connect('button-press-event', lambda w, e, i=sid: self._switch_to(i) or True)
-
-            c = Gtk.ListBoxRow()
-            c.get_style_context().add_class('tab-row')
-            if is_active: c.get_style_context().add_class('tab-active')
-            c.add(eb)
-            self.tabs_container.pack_start(c, False, False, 0)
-
-        self.tabs_container.show_all()
 
     def _rebuild_cats(self):
         if not self.cat_container: return
@@ -569,6 +526,7 @@ class AIHubApp(Gtk.Application):
         r = d.run(); d.destroy()
         if r != Gtk.ResponseType.OK: return
         self.service_views[self.current_sid].get_context().clear_cache()
+        self.service_views[self.current_sid].reload()
         self._flash('Data cleared')
 
     def _reload_page(self):
@@ -590,12 +548,51 @@ class AIHubApp(Gtk.Application):
         self.status_label.set_text(msg)
         GLib.timeout_add_seconds(2, lambda: self.status_label.set_text('') or True)
 
+    def _apply_proxy(self):
+        import os as _os
+        if not self.config.get('proxyEnabled', False):
+            for k in ('http_proxy', 'https_proxy', 'all_proxy', 'no_proxy',
+                      'HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'NO_PROXY'):
+                _os.environ.pop(k, None)
+                for dk in ('HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'NO_PROXY'):
+                    _os.environ.pop(dk, None)
+            return
+        if self.config.get('useSystemProxy', False):
+            try:
+                import subprocess
+                r = subprocess.run(['gsettings', 'get', 'org.gnome.system.proxy', 'mode'],
+                                   capture_output=True, text=True, timeout=2)
+                mode = r.stdout.strip().strip("'")
+                if mode == 'manual':
+                    host_r = subprocess.run(['gsettings', 'get', 'org.gnome.system.proxy.http', 'host'],
+                                            capture_output=True, text=True, timeout=2)
+                    port_r = subprocess.run(['gsettings', 'get', 'org.gnome.system.proxy.http', 'port'],
+                                            capture_output=True, text=True, timeout=2)
+                    host = host_r.stdout.strip().strip("'")
+                    port = port_r.stdout.strip().strip("'")
+                    if host and port:
+                        _os.environ['http_proxy'] = f'http://{host}:{port}'
+                        _os.environ['https_proxy'] = f'http://{host}:{port}'
+                elif mode == 'none':
+                    for k in ('http_proxy', 'https_proxy'): _os.environ.pop(k, None)
+            except: pass
+        else:
+            ptype = self.config.get('proxyType', 'http')
+            host = self.config.get('proxyHost', '')
+            port = self.config.get('proxyPort', '')
+            if host and port:
+                url = f'{ptype}://{host}:{port}'
+                _os.environ['http_proxy'] = url
+                _os.environ['https_proxy'] = url
+                if ptype == 'socks5':
+                    _os.environ['all_proxy'] = url
+
     # ── main window ──────────────────────────────────────────
     def on_activate(self, app):
         self.load_config(); self.load_services(); self.load_rules()
 
         self.win = Gtk.ApplicationWindow(application=app)
-        self.win.set_title('AI Hub')
+        self.win.set_title('AI Hub for Linux')
         self.win.set_default_size(1100, 750)
         self.win.set_position(Gtk.WindowPosition.CENTER)
 
@@ -604,7 +601,7 @@ class AIHubApp(Gtk.Application):
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-        self.win.set_title('AI Hub')
+        self.win.set_title('AI Hub for Linux')
 
         # ── toolbar below system titlebar ──
         tb = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
@@ -690,19 +687,6 @@ class AIHubApp(Gtk.Application):
         sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
         sidebar.pack_start(sep, False, False, 0)
 
-        self.tabs_expander = Gtk.Expander(label='Open tabs')
-        self.tabs_expander.set_expanded(True)
-        self.tabs_expander.get_style_context().add_class('tabs-section')
-        tscroll = Gtk.ScrolledWindow()
-        tscroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        tscroll.set_min_content_height(60)
-        tscroll.set_max_content_height(200)
-        self.tabs_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        tscroll.add(self.tabs_container)
-        self.tabs_expander.add(tscroll)
-        self.tabs_expander.set_visible(False)
-        sidebar.pack_start(self.tabs_expander, False, False, 0)
-
         # Settings button at bottom
         sbtn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         sbtn_box.set_margin_start(6); sbtn_box.set_margin_end(6)
@@ -730,6 +714,11 @@ class AIHubApp(Gtk.Application):
             sid = self.config['lastActiveService']
             svc = self._find(sid)
             if svc: self.open_service(sid, svc[1], svc[0])
+        elif not self.config.get('loadLastOpenedAI'):
+            ds = self.config.get('defaultService', '')
+            if ds:
+                svc = self._find(ds)
+                if svc: self.open_service(ds, svc[1], svc[0])
 
         GLib.timeout_add_seconds(3, lambda: self.update_remote_data() or False)
 
@@ -751,7 +740,9 @@ class AIHubApp(Gtk.Application):
         d.format_secondary_text('This will clear the cache for all services.')
         r = d.run(); d.destroy()
         if r != Gtk.ResponseType.OK: return
-        for wv in self.service_views.values(): wv.get_context().clear_cache()
+        for wv in self.service_views.values():
+            wv.get_context().clear_cache()
+            wv.reload()
         btn.set_label('\u2713 Cache cleared')
 
     def _clear_all_dialog(self, parent, btn):
@@ -784,12 +775,15 @@ class AIHubApp(Gtk.Application):
         hd = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         hd.pack_start(Gtk.Label(label='Default service:'), False, False, 0)
         cd = Gtk.ComboBoxText()
+        cd.append('', 'None (start on welcome)')
         for s in self.services_data:
             sid = self.gen_id(s[0])
             if sid in self.config.get('enabledServices', []): cd.append(sid, s[0])
-        cd.set_active_id(self.config.get('defaultService', 'chatgpt'))
+        cd.set_active_id(self.config.get('defaultService', ''))
+        cd.set_sensitive(not self.config.get('loadLastOpenedAI', True))
         hd.pack_start(cd, True, True, 0)
         g.pack_start(hd, False, False, 0)
+        chk_load.connect('toggled', lambda b: cd.set_sensitive(not b.get_active()))
 
         hf = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         hf.pack_start(Gtk.Label(label='Font size:'), False, False, 0)
@@ -839,6 +833,10 @@ class AIHubApp(Gtk.Application):
         chk_pr = Gtk.CheckButton(label='Enable proxy', active=self.config.get('proxyEnabled', False))
         nw.pack_start(chk_pr, False, False, 0)
 
+        chk_sys = Gtk.CheckButton(label='Use system proxy', active=self.config.get('useSystemProxy', False))
+        chk_sys.set_margin_start(20)
+        nw.pack_start(chk_sys, False, False, 0)
+
         hp = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         nw.pack_start(hp, False, False, 0)
 
@@ -850,6 +848,14 @@ class AIHubApp(Gtk.Application):
         hp.pack_start(eph, True, True, 0)
         epp = Gtk.Entry(); epp.set_placeholder_text('Port'); epp.set_width_chars(6); epp.set_text(self.config.get('proxyPort',''))
         hp.pack_start(epp, False, False, 0)
+
+        def _on_pr_toggle(b):
+            chk_sys.set_sensitive(b.get_active())
+            c = not (b.get_active() and chk_sys.get_active())
+            cp.set_sensitive(c); eph.set_sensitive(c); epp.set_sensitive(c)
+        chk_pr.connect('toggled', _on_pr_toggle)
+        chk_sys.connect('toggled', lambda b: _on_pr_toggle(chk_pr))
+        _on_pr_toggle(chk_pr)
 
         nb.append_page(nw, Gtk.Label(label='Network'))
 
@@ -959,8 +965,8 @@ class AIHubApp(Gtk.Application):
             icon_img.set_margin_bottom(4)
             ab.pack_start(icon_img, False, False, 0)
 
-        l_ab = Gtk.Label(label='AI Hub Desktop', xalign=0)
-        l_ab.set_markup('<b>AI Hub Desktop</b>')
+        l_ab = Gtk.Label(label='AI Hub for Linux', xalign=0)
+        l_ab.set_markup('<b>AI Hub for Linux</b>')
         ab.pack_start(l_ab, False, False, 0)
         ab.pack_start(Gtk.Label(label='Version 0.1.0-beta (Python - Linux Native)', xalign=0), False, False, 0)
         ab.pack_start(Gtk.Label(label='All-in-one AI assistants desktop application', xalign=0), False, False, 0)
@@ -990,7 +996,7 @@ class AIHubApp(Gtk.Application):
             return bx
 
         ab.pack_start(make_link('AI Hub Android', 'Original Android app by SilentCoder', 'https://github.com/SilentCoderHere/aihub'), False, False, 0)
-        ab.pack_start(make_link('AI Hub Desktop', 'Desktop port', 'https://github.com/Daskashk/aihub-desktop'), False, False, 0)
+        ab.pack_start(make_link('AI Hub for Linux', 'Linux desktop port', 'https://github.com/Daskashk/aihub-desktop'), False, False, 0)
 
         sep2 = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
         sep2.set_margin_top(8); sep2.set_margin_bottom(8)
@@ -1028,12 +1034,13 @@ class AIHubApp(Gtk.Application):
 
         if r == Gtk.ResponseType.OK:
             self.config['loadLastOpenedAI'] = chk_load.get_active()
-            self.config['defaultService'] = cd.get_active_id() or 'chatgpt'
+            self.config['defaultService'] = cd.get_active_id() or ''
             self.config['fontSize'] = cf.get_active_id() or 'medium'
             self.config['thirdPartyCookies'] = chk_3p.get_active()
             self.config['blockingEnabled'] = chk_blk.get_active()
             self.config['openExternalLinks'] = chk_ext.get_active()
             self.config['proxyEnabled'] = chk_pr.get_active()
+            self.config['useSystemProxy'] = chk_sys.get_active()
             self.config['proxyType'] = cp.get_active_id() or 'http'
             self.config['proxyHost'] = eph.get_text()
             self.config['proxyPort'] = epp.get_text()
@@ -1053,7 +1060,9 @@ class AIHubApp(Gtk.Application):
                 e.append(sid)
                 o = list(self.config.get('serviceOrder', []))
                 if sid not in o: o.append(sid); self.config['serviceOrder'] = o
-        elif len(e) > 1 and sid in e: e.remove(sid)
+        elif len(e) > 1 and sid in e:
+            e.remove(sid)
+            if sid in self.service_views: self.close_service(sid)
         self.config['enabledServices'] = e
         self.save_config()
         self._rebuild_list()

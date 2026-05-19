@@ -1,0 +1,8 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: AI Hub for Linux
+Upstream-Contact: Daskashk <daskashk@users.noreply.github.com>
+Source: https://github.com/Daskashk/aihub-desktop
+
+Files: *
+Copyright: 2025 Daskashk
+License: GPL-3.0+

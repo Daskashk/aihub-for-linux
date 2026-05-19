@@ -1,0 +1,8 @@
+aihub-for-linux (0.1.0-beta-1) unstable; urgency=medium
+
+  * Initial release: native Python/GTK/WebKitGTK application.
+  * Complete rewrite from Electron to native Linux stack.
+  * Includes CAPTCHA-compatible WebKit rendering with Safari UA.
+  * Domain-level privacy blocking, proxy, custom injection, auto-updates.
+
+ -- Daskashk <daskashk@users.noreply.github.com>  Mon, 18 May 2026 00:00:00 +0000
