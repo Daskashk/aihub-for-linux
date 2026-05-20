@@ -123,6 +123,10 @@ notebook tab:checked { border-bottom: 2px solid @theme_selected_bg_color; color:
 
 /* Settings dialog: frame */
 dialog frame { border-radius: 6px; }
+
+/* Loading spinner */
+.loading-box { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px; }
+.loading-spinner { min-width: 24px; min-height: 24px; color: @theme_selected_bg_color; }
 """
 
 
@@ -135,6 +139,8 @@ class AIHubApp(Gtk.Application):
         self.services_data = []
         self.rules_cache = None
         self.service_views = {}
+        self.service_overlays = {}
+        self.service_spinners = {}
         self.tab_order = []
         self.current_sid = None
         self.categories = []
@@ -295,17 +301,40 @@ class AIHubApp(Gtk.Application):
         self._apply_proxy()
         wv.connect('decide-policy', lambda w, d, t, i=sid: self._on_policy(w, d, t, i))
         wv.connect('load-changed', lambda w, e, i=sid: self._on_load(w, e, i))
-        wv.load_uri(url)
-        wv.show_all()
+        wv.connect('load-failed', lambda w, e, u, d, i=sid: self._hide_spinner(i))
+        overlay = Gtk.Overlay()
+        overlay.add(wv)
+        sp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        sp_box.set_halign(Gtk.Align.CENTER)
+        sp_box.set_valign(Gtk.Align.CENTER)
+        sp_box.set_margin_bottom(40)
+        sp_box.get_style_context().add_class('loading-box')
+        sp = Gtk.Spinner()
+        sp.set_size_request(24, 24)
+        sp.get_style_context().add_class('loading-spinner')
+        sp_box.pack_start(sp, False, False, 0)
+        overlay.add_overlay(sp_box)
+        overlay.show_all()
+        sp_box.hide()
         self.service_views[sid] = wv
+        self.service_overlays[sid] = overlay
+        self.service_spinners[sid] = sp_box
+        z = self.config.get('zoomLevels', {}).get(sid, 1.0)
+        if z != 1.0: wv.set_zoom_level(z)
+        wv.load_uri(url)
         self.tab_order.append(sid)
-        self.stack.add_named(wv, sid)
+        self.stack.add_named(overlay, sid)
         self._switch_to(sid)
 
     def close_service(self, sid):
         if sid in self.service_views:
             wv = self.service_views.pop(sid)
-            self.stack.remove(wv)
+            z = wv.get_zoom_level()
+            self.config.setdefault('zoomLevels', {})[sid] = z
+            self.save_config()
+            overlay = self.service_overlays.pop(sid, None)
+            self.service_spinners.pop(sid, None)
+            self.stack.remove(overlay or wv)
             wv.destroy()
             if sid in self.tab_order: self.tab_order.remove(sid)
             if self.current_sid == sid:
@@ -317,7 +346,7 @@ class AIHubApp(Gtk.Application):
     def _switch_to(self, sid):
         if sid in self.service_views:
             self.current_sid = sid
-            self.stack.set_visible_child(self.service_views[sid])
+            self.stack.set_visible_child(self.service_overlays.get(sid, self.service_views[sid]))
             self.config['lastActiveService'] = sid
             self.save_config()
             self._rebuild_list()
@@ -348,8 +377,22 @@ class AIHubApp(Gtk.Application):
             except: pass
         d.use(); return False
 
+    def _hide_spinner(self, sid):
+        sp_box = self.service_spinners.get(sid)
+        if sp_box:
+            for c in sp_box.get_children():
+                if isinstance(c, Gtk.Spinner): c.stop()
+            sp_box.hide()
+
     def _on_load(self, wv, ev, sid):
-        if ev == WebKit2.LoadEvent.FINISHED:
+        if ev == WebKit2.LoadEvent.STARTED:
+            sp_box = self.service_spinners.get(sid)
+            if sp_box:
+                sp_box.show_all()
+                for c in sp_box.get_children():
+                    if isinstance(c, Gtk.Spinner): c.start()
+        elif ev == WebKit2.LoadEvent.FINISHED:
+            self._hide_spinner(sid)
             css = self.config.get('customCss', '')
             jsc = self.config.get('customJs', '')
             if css:
@@ -507,15 +550,20 @@ class AIHubApp(Gtk.Application):
         return None
 
     def _zoom(self, delta):
-        if self.current_sid and self.current_sid in self.service_views:
-            wv = self.service_views[self.current_sid]
+        sid = self.current_sid
+        if sid and sid in self.service_views:
+            wv = self.service_views[sid]
             if delta == 0:
                 wv.set_zoom_level(1.0)
+                self.config.setdefault('zoomLevels', {})[sid] = 1.0
                 self._flash('Zoom 100%')
             else:
                 z = wv.get_zoom_level()
-                wv.set_zoom_level(max(0.3, min(5.0, z + delta)))
-                self._flash(f'Zoom {int(round((z + delta) * 100))}%')
+                nz = max(0.3, min(5.0, z + delta))
+                wv.set_zoom_level(nz)
+                self.config.setdefault('zoomLevels', {})[sid] = nz
+                self._flash(f'Zoom {int(round(nz * 100))}%')
+            self.save_config()
 
     def _clear_page_data(self):
         if not (self.current_sid and self.current_sid in self.service_views): return
@@ -968,7 +1016,7 @@ class AIHubApp(Gtk.Application):
         l_ab = Gtk.Label(label='AI Hub for Linux', xalign=0)
         l_ab.set_markup('<b>AI Hub for Linux</b>')
         ab.pack_start(l_ab, False, False, 0)
-        ab.pack_start(Gtk.Label(label='Version 0.2.0-beta (Python - Linux Native)', xalign=0), False, False, 0)
+        ab.pack_start(Gtk.Label(label='Version 0.2.1-beta (Python - Linux Native)', xalign=0), False, False, 0)
         ab.pack_start(Gtk.Label(label='All-in-one AI assistants desktop application', xalign=0), False, False, 0)
 
         sep1 = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
